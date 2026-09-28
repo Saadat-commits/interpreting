@@ -6,18 +6,28 @@ import type { Booking, Invoice, InvoiceLine } from "@/lib/types";
 
 export function calculateLines(booking: Pick<Booking, "service" | "durationMinutes" | "language" | "category">): InvoiceLine[] {
   const p = pricing.services[booking.service];
-  const billedMinutes = Math.max(booking.durationMinutes, p.minimumMinutes);
-  const units = Math.ceil(billedMinutes / p.unitMinutes);
+  const detail = `${de.languages[booking.language]} – Deutsch · ${de.categories[booking.category]}`;
   const lines: InvoiceLine[] = [
     {
       description: p.label,
-      detail: `${de.languages[booking.language]} ↔ Deutsch · ${de.categories[booking.category]} · ${billedMinutes} Min.`,
-      quantity: units,
-      unit: `je ${p.unitMinutes} Min.`,
-      unitPriceCents: p.unitPriceCents,
-      totalCents: units * p.unitPriceCents,
+      detail: `${detail} · bis ${pricing.includedMinutes} Min. (Mindestabrechnung)`,
+      quantity: 1,
+      unit: `bis ${pricing.includedMinutes} Min.`,
+      unitPriceCents: p.firstHourCents,
+      totalCents: p.firstHourCents,
     },
   ];
+  const extra = Math.max(0, booking.durationMinutes - pricing.includedMinutes);
+  if (extra > 0) {
+    lines.push({
+      description: "Weitere Einsatzzeit",
+      detail: `${extra} Min. über ${pricing.includedMinutes} Min.`,
+      quantity: extra,
+      unit: "Min.",
+      unitPriceCents: pricing.perExtraMinuteCents,
+      totalCents: extra * pricing.perExtraMinuteCents,
+    });
+  }
   for (const fee of p.flatFees) {
     lines.push({ description: fee.label, quantity: 1, unit: "pauschal", unitPriceCents: fee.cents, totalCents: fee.cents });
   }
@@ -40,8 +50,8 @@ export function buildInvoice(booking: Booking, seq: number, now = new Date()): I
     serviceDate: dateKeyOf(new Date(booking.start), tz),
     dueDate: addDaysToKey(issueDate, pricing.paymentTermDays),
     recipient: {
-      name: booking.contact.name,
-      organisation: booking.contact.organisation,
+      name: booking.bookerType === "organisation" && booking.organisation?.caseWorker ? `z. Hd. ${booking.organisation.caseWorker}` : booking.contact.name,
+      organisation: booking.billingRecipient || (booking.bookerType === "organisation" ? booking.organisation?.name : undefined),
       address: booking.billingAddress,
       email: booking.contact.email,
     },

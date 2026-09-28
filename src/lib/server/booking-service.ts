@@ -41,12 +41,14 @@ async function busyAround(start: Date, end: Date, excludeId?: string) {
  * Der Termin ist für `confirmationHoldMinutes` blockiert, aber noch nicht verbindlich.
  */
 export async function createBooking(req: BookingRequest, baseUrl: string): Promise<CreateBookingResult> {
-  if (!isValidDuration(req.service, req.durationMinutes)) return { ok: false, error: "invalid_duration" };
+  // Sofort-Anruf: kein Kalenderplatz, Abrechnung später nach tatsächlichen Minuten
+  const instant = req.service === "phone" && req.phoneSession?.mode === "instant";
+  if (!instant && !isValidDuration(req.service, req.durationMinutes)) return { ok: false, error: "invalid_duration" };
 
-  const start = new Date(req.start);
+  const start = instant ? new Date() : new Date(req.start);
   const end = new Date(start.getTime() + req.durationMinutes * 60000);
   const calendar = getCalendar();
-  const externalBusy = calendar.id === "local" ? [] : await calendar.getBusy(new Date(start.getTime() - 86400000), new Date(end.getTime() + 86400000));
+  const externalBusy = instant || calendar.id === "local" ? [] : await calendar.getBusy(new Date(start.getTime() - 86400000), new Date(end.getTime() + 86400000));
 
   const store = getStore();
   const now = new Date().toISOString();
@@ -66,12 +68,15 @@ export async function createBooking(req: BookingRequest, baseUrl: string): Promi
       start: start.toISOString(),
       end: end.toISOString(),
       timezone: availabilityConfig.timezone,
+      bookerType: req.bookerType,
+      organisation: req.bookerType === "organisation" ? req.organisation : undefined,
       clientName: req.clientName,
       onsite: req.service === "onsite" ? req.onsite : undefined,
       phoneSession: req.service === "phone" ? req.phoneSession : undefined,
       contact: req.contact,
       billingSameAsAppointment: req.service === "onsite" && req.billingSameAsAppointment,
       billingAddress: billing,
+      billingRecipient: req.billingRecipient || undefined,
       notes: req.notes || undefined,
       calendar: { provider: calendar.id, syncStatus: "not_synced" },
       payment: { provider: "invoice", status: "unpaid" },
@@ -81,6 +86,7 @@ export async function createBooking(req: BookingRequest, baseUrl: string): Promi
       updatedAt: now,
     }),
     (existing) => {
+      if (instant) return true;
       const busy = [...externalBusy, ...existing.filter((b) => blocksCalendar(b)).map(bookingToBusy)];
       return isSlotAvailable(req.service, req.durationMinutes, start.toISOString(), busy);
     },
@@ -138,10 +144,21 @@ export async function resendVerification(bookingId: string, baseUrl: string) {
  */
 export async function confirmBooking(booking: Booking): Promise<Booking> {
   const store = getStore();
+  const instant = booking.phoneSession?.mode === "instant";
+  const calendarLink = await getCalendar().createEvent(booking);
+
+  if (instant) {
+    // Rechnung folgt nach dem Gespräch (tatsächliche Minuten)
+    const confirmed = (await store.updateBooking(booking.id, { status: "confirmed", calendar: calendarLink })) ?? booking;
+    const agbPdf = await renderAgbPdf();
+    const results = await Promise.allSettled([sendBookingConfirmation(confirmed, null, null, agbPdf), notifyOwnerOfBooking(confirmed, null, null)]);
+    for (const r of results) if (r.status === "rejected") console.error("[mail]", r.reason);
+    return confirmed;
+  }
+
   const invoiceDraft = await store.createInvoice((seq) => buildInvoice(booking, seq));
   const payment = await getPaymentProvider().prepare(booking, invoiceDraft);
   const invoice = { ...invoiceDraft, payment };
-  const calendarLink = await getCalendar().createEvent(booking);
 
   const confirmed =
     (await store.updateBooking(booking.id, {
@@ -169,5 +186,6 @@ export function publicBooking(b: Booking) {
     email: b.contact.email,
     service: b.service,
     location: b.onsite ? [b.onsite.institution, formatAddress(b.onsite.address)].filter(Boolean).join(", ") : undefined,
+    instant: b.phoneSession?.mode === "instant",
   };
 }

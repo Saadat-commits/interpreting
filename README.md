@@ -62,7 +62,8 @@ Einmalig einrichten (ca. 10 Minuten):
    Die **Client-ID** (Zahl) des Dienstkontos notieren.
 3. admin.google.com → *Sicherheit → Zugriffs- und Datenverwaltung → API-Steuerung → Domainweite Delegierung* →
    *Neu hinzufügen*: Client-ID eintragen, Bereiche
-   `https://www.googleapis.com/auth/gmail.send,https://www.googleapis.com/auth/calendar`.
+   `https://www.googleapis.com/auth/gmail.modify,https://www.googleapis.com/auth/calendar`.
+   (gmail.modify erlaubt Senden und das automatische Einsortieren in Gmail-Ordner wie „Interpreting/Buchungen“.)
 4. Bei Vercel eintragen: `GOOGLE_SERVICE_ACCOUNT_EMAIL` (client_email), `GOOGLE_SERVICE_ACCOUNT_KEY` (private_key),
    `GOOGLE_DELEGATED_USER=saadat@interpreting-nbg.de`.
 

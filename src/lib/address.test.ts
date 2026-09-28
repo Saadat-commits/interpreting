@@ -36,7 +36,8 @@ describe("Hilfen", () => {
   it("PLZ → Ort", () => {
     expect(cityForPostalCode("90762")).toBe("Fürth");
     expect(cityForPostalCode("90443")).toBe("Nürnberg");
-    expect(cityForPostalCode("99999")).toBeNull();
+    expect(cityForPostalCode("10115")).toBe("Berlin");
+    expect(cityForPostalCode("00000")).toBeNull();
   });
   it("E-Mail-Tippfehler", () => {
     expect(suggestEmail("petra@gmial.com")).toBe("petra@gmail.com");

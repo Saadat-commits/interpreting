@@ -26,6 +26,7 @@ export function bookingToBusy(b: Pick<Booking, "start" | "end" | "service">): Ti
 /** Blockiert eine Buchung den Kalender? Unbestätigte Reservierungen nur bis zum Ablauf der Haltefrist. */
 export function blocksCalendar(b: Booking, now = new Date()) {
   if (b.status === "cancelled") return false;
+  if (b.phoneSession?.mode === "instant") return false;
   if (b.status === "pending") return !!b.verification && new Date(b.verification.expiresAt) > now;
   return true;
 }

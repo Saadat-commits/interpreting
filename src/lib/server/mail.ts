@@ -37,7 +37,7 @@ function getTransport(): { t: Transporter; mode: "smtp" | "outbox" | "gmail" } {
   return { t: transporter, mode: "outbox" };
 }
 
-async function send(to: string, subject: string, html: string, textBody: string, attachments: Attachment[] = [], replyTo?: string) {
+async function send(to: string, subject: string, html: string, textBody: string, attachments: Attachment[] = [], replyTo?: string, labels: string[] = []) {
   const { t, mode } = getTransport();
   const info = await t.sendMail({
     from: process.env.MAIL_FROM || `${site.brand} <${delegatedUser() ?? site.email}>`,
@@ -49,7 +49,7 @@ async function send(to: string, subject: string, html: string, textBody: string,
     attachments,
   });
   if (mode === "gmail") {
-    await gmailSendRaw((info as unknown as { message: Buffer }).message);
+    await gmailSendRaw((info as unknown as { message: Buffer }).message, labels.map((l) => `Interpreting/${l}`));
     return;
   }
   if (mode === "outbox") {
@@ -70,16 +70,25 @@ function when(b: Booking, locale: "de" | "fa") {
   return `${day}, ${t.format(new Date(b.start))} – ${t.format(new Date(b.end))}${locale === "de" ? " Uhr" : ""}`;
 }
 
+/** Anzeigename der buchenden Person bzw. Einrichtung */
+function bookerLine(b: Booking) {
+  return b.bookerType === "organisation" && b.organisation
+    ? `${b.organisation.name}${b.organisation.caseWorker ? ` · ${b.organisation.caseWorker}` : ""}`
+    : b.contact.name;
+}
+
 function detailRows(b: Booking, locale: "de" | "fa") {
   const d = locale === "fa" ? fa : de;
+  const instant = b.phoneSession?.mode === "instant";
   const rows: [string, string][] = [
     [d.booking.review.service, `${b.service === "phone" ? d.booking.service.phone.title : d.booking.service.onsite.title} · ${d.languages[b.language]}`],
-    [d.booking.review.when, when(b, locale)],
+    [d.booking.review.when, instant ? (locale === "fa" ? "همین حالا" : "Sofort – Sie rufen uns an") : when(b, locale)],
   ];
   if (b.onsite) rows.push([d.booking.review.where, [b.onsite.institution, formatAddress(b.onsite.address)].filter(Boolean).join(", ")]);
-  if (b.phoneSession) rows.push([d.booking.details.callNumber, b.phoneSession.callNumber]);
-  rows.push([d.booking.review.client, b.clientName]);
-  if (b.onsite?.caseWorker) rows.push([d.booking.details.caseWorker, b.onsite.caseWorker]);
+  if (b.bookerType === "organisation") {
+    rows.push([locale === "fa" ? "سازمان" : "Einrichtung", bookerLine(b)]);
+    rows.push([d.booking.review.client, b.clientName]);
+  }
   return rows;
 }
 
@@ -133,61 +142,82 @@ ${button(link, "تأیید قرار")}</div>`;
     subject += " · تأیید قرار";
   }
   const textBody = `Bitte bestätigen Sie Ihren Termin:\n${link}\n\n${detailRows(b, "de").map(([k, v]) => `${k}: ${v}`).join("\n")}\n\nReserviert bis ${until} Uhr.`;
-  await send(b.contact.email, subject, layout(html), textBody);
+  await send(b.contact.email, subject, layout(html), textBody, [], undefined, ["Kunden-E-Mails"]);
 }
 
-export async function sendBookingConfirmation(b: Booking, invoice: Invoice, invoicePdf: Uint8Array, agbPdf: Uint8Array) {
+function mapsLink(b: Booking) {
+  return b.onsite ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(formatAddress(b.onsite.address))}` : null;
+}
+
+function icsFile(b: Booking) {
+  const f = (iso: string) => iso.replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+  const loc = b.onsite ? formatAddress(b.onsite.address).replace(/,/g, "\\,") : "Telefon";
+  return [
+    "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Interpreting NBG//Buchung//DE", "METHOD:PUBLISH", "BEGIN:VEVENT",
+    `UID:${b.reference}@interpreting-nbg.de`, `DTSTAMP:${f(new Date().toISOString())}`, `DTSTART:${f(b.start)}`, `DTEND:${f(b.end)}`,
+    `SUMMARY:Dolmetschtermin (${site.brand})`, `LOCATION:${loc}`, "END:VEVENT", "END:VCALENDAR",
+  ].join("\r\n");
+}
+
+function infoCard(icon: string, title: string, body: string) {
+  return `<td valign="top" style="width:50%;padding:6px"><div style="border:1px solid #E4EAE6;border-radius:12px;padding:14px 16px">
+<div style="font-size:18px">${icon}</div><div style="font-size:12px;color:#6B7A73;margin-top:4px">${esc(title)}</div><div style="font-size:14px;font-weight:700;margin-top:2px">${body}</div></div></td>`;
+}
+
+/** Zweite E-Mail nach der Bestätigung: Dank, alle Details, Links, Rechnung (PDF), AGB und Kalenderdatei */
+export async function sendBookingConfirmation(b: Booking, invoice: Invoice | null, invoicePdf: Uint8Array | null, agbPdf: Uint8Array) {
   const first = b.contact.name.split(" ")[0];
-  let html = `<h1 style="font-size:22px;margin:12px 0 8px">Vielen Dank, ${esc(first)}!</h1>
-<p style="font-size:15px;line-height:1.6;color:#3B4A43;margin:0">Ihr Termin ist bestätigt. Wir freuen uns sehr, dass Sie uns Ihr Vertrauen schenken – und sorgen dafür, dass im Gespräch jedes Wort ankommt.</p>
+  const instant = b.phoneSession?.mode === "instant";
+  const maps = mapsLink(b);
+  const intro = instant
+    ? "Ihre Anfrage ist bestätigt. Rufen Sie uns jetzt einfach an – wir dolmetschen sofort. Abgerechnet wird nach Minuten; die Rechnung erhalten Sie nach dem Gespräch per E-Mail."
+    : "Ihr Termin ist verbindlich gebucht. Wir freuen uns sehr, dass Sie uns Ihr Vertrauen schenken – und sorgen dafür, dass im Gespräch jedes Wort ankommt.";
+  const cards = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:14px -6px"><tr>
+${infoCard("📅", instant ? "Wann" : "Termin", esc(instant ? "Jetzt sofort" : when(b, "de")))}
+${infoCard(b.onsite ? "📍" : "📞", b.onsite ? "Ort" : "Telefonisch", b.onsite ? `${esc([b.onsite.institution, formatAddress(b.onsite.address)].filter(Boolean).join(", "))}${maps ? `<br><a href="${maps}" style="color:#1F7049;font-weight:600">In Google Maps öffnen →</a>` : ""}` : `<a href="${site.phoneHref}" style="color:#1F7049">${esc(site.phone)}</a>`)}
+</tr></table>`;
+  let html = `<h1 style="font-size:24px;margin:12px 0 8px">Vielen Dank, ${esc(first)}! 🌿</h1>
+<p style="font-size:15px;line-height:1.7;color:#3B4A43;margin:0">${intro}</p>
+${cards}
 ${table(detailRows(b, "de"), "ltr")}
-<p style="font-size:14px;line-height:1.6;color:#3B4A43">Ihre Rechnung <b>${esc(invoice.number)}</b> sowie unsere AGB finden Sie als PDF im Anhang. Buchungsnummer: <b>${esc(b.reference)}</b>.</p>
-<p style="font-size:14px;line-height:1.6;color:#3B4A43">Sie möchten etwas ändern oder haben eine Frage? Antworten Sie einfach auf diese E-Mail oder rufen Sie uns an: <a href="${site.phoneHref}" style="color:#1F7049">${esc(site.phone)}</a>.</p>
-<p style="font-size:14px;line-height:1.6;color:#3B4A43;margin-top:22px">Herzliche Grüße<br><b>${esc(site.owner)}</b><br>${esc(site.brand)}</p>`;
-  let subject = `Terminbestätigung ${b.reference} – vielen Dank!`;
-
+${instant ? button(site.phoneHref, `Jetzt anrufen: ${site.phone}`) : ""}
+<p style="font-size:14px;line-height:1.7;color:#3B4A43">${invoice ? `Im Anhang: Ihre Rechnung <b>${esc(invoice.number)}</b> (PDF), unsere AGB und eine Kalenderdatei für Ihr Handy.` : "Im Anhang finden Sie unsere AGB."} Buchungsnummer: <b>${esc(b.reference)}</b>.</p>
+<p style="font-size:14px;line-height:1.7;color:#3B4A43">Etwas ändern oder eine Frage? Antworten Sie einfach auf diese E-Mail oder rufen Sie an: <a href="${site.phoneHref}" style="color:#1F7049;font-weight:600">${esc(site.phone)}</a></p>
+<p style="font-size:14px;line-height:1.7;color:#3B4A43;margin-top:22px">Herzliche Grüße<br><b>${esc(site.owner)}</b><br>${esc(site.brand)} · <a href="https://${site.website}" style="color:#1F7049">${esc(site.website)}</a></p>`;
+  let subject = instant ? `Bestätigt – rufen Sie uns jetzt an (${b.reference})` : `Ihr Termin ist gebucht – vielen Dank! (${b.reference})`;
   if (b.locale === "fa") {
-    const faBlock = `<div dir="rtl" style="text-align:right;border-top:1px solid #E4EAE6;margin-top:26px;padding-top:18px;font-family:Vazirmatn,Tahoma,sans-serif">
+    html += `<div dir="rtl" style="text-align:right;border-top:1px solid #E4EAE6;margin-top:26px;padding-top:18px;font-family:Vazirmatn,Tahoma,sans-serif">
 <h2 style="font-size:19px;margin:0 0 8px">از اعتماد شما صمیمانه سپاسگزاریم!</h2>
-<p style="font-size:15px;line-height:1.9;color:#3B4A43;margin:0">قرار شما تأیید شد. خوشحالیم که در کنار شما هستیم و مطمئن می‌شویم که هر کلمه درست منتقل شود. صورت‌حساب و شرایط عمومی به‌صورت PDF پیوست شده است.</p>
+<p style="font-size:15px;line-height:1.9;color:#3B4A43;margin:0">${instant ? "درخواست شما تأیید شد. همین حالا با ما تماس بگیرید." : "قرار شما قطعی ثبت شد."} صورت‌حساب و شرایط عمومی پیوست شده است.</p>
 ${table(detailRows(b, "fa"), "rtl")}</div>`;
-    html += faBlock;
-    subject = `Terminbestätigung ${b.reference} · تأیید قرار`;
+    subject += " · تأیید شد";
   }
-
-  const textBody = [
-    `Vielen Dank, ${first}!`,
-    "",
-    "Ihr Termin ist bestätigt.",
-    ...detailRows(b, "de").map(([k, v]) => `${k}: ${v}`),
-    "",
-    `Rechnung ${invoice.number} und AGB im Anhang. Buchungsnummer: ${b.reference}`,
-    "",
-    `Herzliche Grüße, ${site.owner} – ${site.brand}`,
-  ].join("\n");
-
-  await send(b.contact.email, subject, layout(html), textBody, [
-    { filename: `Rechnung-${invoice.number}.pdf`, content: Buffer.from(invoicePdf), contentType: "application/pdf" },
-    { filename: "AGB.pdf", content: Buffer.from(agbPdf), contentType: "application/pdf" },
-  ]);
+  const textBody = [`Vielen Dank, ${first}!`, "", intro, ...detailRows(b, "de").map(([k, v]) => `${k}: ${v}`), maps ? `Google Maps: ${maps}` : "", "", `Buchungsnummer: ${b.reference}`, `Telefon: ${site.phone}`, "", `Herzliche Grüße, ${site.owner} – ${site.brand}`].join("\n");
+  const attachments: Attachment[] = [];
+  if (invoice && invoicePdf) attachments.push({ filename: `Rechnung-${invoice.number}.pdf`, content: Buffer.from(invoicePdf), contentType: "application/pdf" });
+  attachments.push({ filename: "AGB.pdf", content: Buffer.from(agbPdf), contentType: "application/pdf" });
+  if (!instant) attachments.push({ filename: "Termin.ics", content: Buffer.from(icsFile(b)), contentType: "text/calendar" });
+  await send(b.contact.email, subject, layout(html), textBody, attachments, undefined, ["Kunden-E-Mails"]);
 }
 
-export async function notifyOwnerOfBooking(b: Booking, invoice: Invoice, invoicePdf: Uint8Array) {
+export async function notifyOwnerOfBooking(b: Booking, invoice: Invoice | null, invoicePdf: Uint8Array | null) {
   const to = process.env.OWNER_EMAIL || delegatedUser() || site.email;
   const rows = [
     ...detailRows(b, "de"),
-    ["Auftraggeber:in", [b.contact.name, b.contact.organisation].filter(Boolean).join(" · ")] as [string, string],
-    ["Kontakt", `${b.contact.email} · ${b.contact.phone}`] as [string, string],
-    ["Rechnung", invoice.number] as [string, string],
+    ["Gebucht von", bookerLine(b)] as [string, string],
+    ["Kontakt", `${b.contact.name} · ${b.contact.email} · ${b.contact.phone}`] as [string, string],
+    ["Rechnung an", [b.billingRecipient, b.billingAddress ? formatAddress(b.billingAddress) : ""].filter(Boolean).join(", ") || "—"] as [string, string],
+    ["Rechnung", invoice ? invoice.number : "folgt nach dem Gespräch (Minuten)"] as [string, string],
   ];
   if (b.notes) rows.push(["Hinweise", b.notes]);
   await send(
     to,
-    `Neue Buchung ${b.reference}: ${when(b, "de")}`,
+    `✅ Neue Buchung ${b.reference}: ${b.phoneSession?.mode === "instant" ? "Sofort-Anruf" : when(b, "de")} – ${bookerLine(b)}`,
     layout(`<h1 style="font-size:20px">Neue Buchung ${esc(b.reference)}</h1>${table(rows, "ltr")}`),
     rows.map(([k, v]) => `${k}: ${v}`).join("\n"),
-    [{ filename: `Rechnung-${invoice.number}.pdf`, content: Buffer.from(invoicePdf), contentType: "application/pdf" }],
+    invoice && invoicePdf ? [{ filename: `Rechnung-${invoice.number}.pdf`, content: Buffer.from(invoicePdf), contentType: "application/pdf" }] : [],
     b.contact.email,
+    invoice ? ["Buchungen", "Rechnungen"] : ["Buchungen"],
   );
 }
 
@@ -207,5 +237,6 @@ export async function notifyOwnerOfChat(m: ChatMessage) {
     `${rows.map(([k, v]) => `${k}: ${v}`).join("\n")}\n\n${m.message}`,
     [],
     replyTo,
+    ["Anfragen"],
   );
 }

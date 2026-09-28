@@ -58,7 +58,7 @@ describe("Gmail-Versand über das Dienstkonto", () => {
     const jwt = new URLSearchParams(calls[0].body).get("assertion")!;
     const claims = JSON.parse(Buffer.from(jwt.split(".")[1], "base64url").toString());
     expect(claims.sub).toBe("saadat@interpreting-nbg.de");
-    expect(claims.scope).toContain("gmail.send");
+    expect(claims.scope).toContain("gmail.modify");
     expect(calls[1].url).toContain("/gmail/v1/users/me/messages/send");
   });
 });

@@ -12,6 +12,8 @@ import { createSign } from "node:crypto";
 export const SCOPES = {
   calendar: "https://www.googleapis.com/auth/calendar",
   gmailSend: "https://www.googleapis.com/auth/gmail.send",
+  /** Senden + Ordner (Labels) setzen */
+  gmailModify: "https://www.googleapis.com/auth/gmail.modify",
 };
 
 export function googleConfigured() {
@@ -52,14 +54,45 @@ export async function googleAccessToken(scope: string, subject = delegatedUser()
   return data.access_token;
 }
 
-/** Sendet eine fertige MIME-Nachricht über die Gmail-API im Namen des delegierten Nutzers. */
-export async function gmailSendRaw(mime: Buffer) {
-  const token = await googleAccessToken(SCOPES.gmailSend);
-  const res = await fetch("https://gmail.googleapis.com/gmail/v1/users/me/messages/send", {
-    method: "POST",
+const labelIds = new Map<string, string>();
+
+async function gmailApi<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const token = await googleAccessToken(SCOPES.gmailModify);
+  const res = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me${path}`, {
+    ...init,
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ raw: mime.toString("base64url") }),
     signal: AbortSignal.timeout(15000),
   });
   if (!res.ok) throw new Error(`Gmail (${res.status}): ${await res.text()}`);
+  return (await res.json()) as T;
+}
+
+/** Gmail-Label (z. B. „Interpreting/Buchungen“) finden oder anlegen */
+async function ensureLabel(name: string): Promise<string> {
+  if (labelIds.has(name)) return labelIds.get(name)!;
+  const { labels = [] } = await gmailApi<{ labels?: { id: string; name: string }[] }>("/labels");
+  for (const l of labels) labelIds.set(l.name, l.id);
+  if (!labelIds.has(name)) {
+    const created = await gmailApi<{ id: string }>("/labels", {
+      method: "POST",
+      body: JSON.stringify({ name, labelListVisibility: "labelShow", messageListVisibility: "show", color: { backgroundColor: "#16a766", textColor: "#ffffff" } }),
+    });
+    labelIds.set(name, created.id);
+  }
+  return labelIds.get(name)!;
+}
+
+/**
+ * Sendet eine fertige MIME-Nachricht über die Gmail-API im Namen des delegierten Nutzers
+ * und sortiert sie in Gmail-Ordner (Labels), z. B. „Interpreting/Buchungen“.
+ */
+export async function gmailSendRaw(mime: Buffer, labels: string[] = []) {
+  const sent = await gmailApi<{ id: string }>("/messages/send", { method: "POST", body: JSON.stringify({ raw: mime.toString("base64url") }) });
+  if (!labels.length) return;
+  try {
+    const ids = await Promise.all(labels.map(ensureLabel));
+    await gmailApi(`/messages/${sent.id}/modify`, { method: "POST", body: JSON.stringify({ addLabelIds: ids }) });
+  } catch (e) {
+    console.error("[gmail:labels]", e); // Sortierung ist optional – der Versand hat geklappt
+  }
 }

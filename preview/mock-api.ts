@@ -6,6 +6,7 @@ import { computeMonth } from "@/lib/availability";
 import { MOCK_ADDRESSES } from "@/lib/server/places";
 import type { PostalAddress, TimeInterval } from "@/lib/types";
 import { zonedToUtc } from "@/lib/time";
+import { citiesForPostalCode } from "@/lib/postal";
 
 const extra: PostalAddress[] = [
   { label: "Königstorgraben 11, 90402 Nürnberg", street: "Königstorgraben", houseNumber: "11", postalCode: "90402", city: "Nürnberg", country: "DE", placeName: "Kinderarztpraxis am Königstor", source: "mock" },
@@ -35,7 +36,7 @@ const json = (data: unknown, status = 200) =>
   new Response(JSON.stringify(data), { status, headers: { "Content-Type": "application/json" } });
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 let seq = 41;
-const pending = new Map<string, { reference: string; start: string; end: string; email: string; location?: string }>();
+const pending = new Map<string, { reference: string; start: string; end: string; email: string; location?: string; instant?: boolean }>();
 
 export function installMockApi() {
   const real = window.fetch.bind(window);
@@ -73,7 +74,7 @@ export function installMockApi() {
       const end = new Date(start.getTime() + body.durationMinutes * 60000);
       const token = `demo${++seq}`;
       const location = body.onsite ? [body.onsite.institution, body.onsite.address?.label].filter(Boolean).join(", ") : undefined;
-      pending.set(token, { reference: `T-${start.getFullYear()}-${String(seq).padStart(4, "0")}`, start: start.toISOString(), end: end.toISOString(), email: body.contact?.email, location });
+      pending.set(token, { reference: `T-${start.getFullYear()}-${String(seq).padStart(4, "0")}`, start: start.toISOString(), end: end.toISOString(), email: body.contact?.email, location, instant: body.phoneSession?.mode === "instant" });
       const holdUntil = new Date(Date.now() + 60 * 60000).toISOString();
       return json({ id: token, status: "pending", email: body.contact?.email, start: start.toISOString(), end: end.toISOString(), holdUntil, demoToken: token }, 201);
     }
@@ -86,6 +87,10 @@ export function installMockApi() {
     if (path === "/api/bookings/resend") {
       await wait(600);
       return json({ ok: true });
+    }
+    if (path === "/api/plz") {
+      await wait(120);
+      return json({ cities: citiesForPostalCode(url.searchParams.get("code") ?? "") });
     }
     if (path === "/api/chat") {
       await wait(500);

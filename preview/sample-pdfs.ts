@@ -22,6 +22,8 @@ const booking: Booking = {
   start: start.toISOString(),
   end: new Date(start.getTime() + 3600000).toISOString(),
   timezone: "Europe/Berlin",
+  bookerType: "organisation",
+  organisation: { name: "Stadt Nürnberg – Jugendamt", caseWorker: "Frau Beispiel" },
   clientName: "Beispiel Klientin",
   onsite: { address: { ...address, placeName: "Jugendamt Nürnberg" }, institution: "Jugendamt Nürnberg", caseWorker: "Frau Beispiel" },
   contact: { name: "Max Mustermann", email: "max@example.org", phone: "0911 000000" },

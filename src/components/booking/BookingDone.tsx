@@ -7,7 +7,7 @@ import type { Dictionary } from "@/lib/i18n";
 import { intlLocale } from "@/lib/i18n";
 import { starPath } from "@/lib/star";
 import type { Locale } from "@/lib/types";
-import { IconAlert, IconArrow, IconCalendar, IconCheck, IconMail } from "../icons";
+import { IconAlert, IconArrow, IconCalendar, IconCheck, IconMail, IconPhone } from "../icons";
 
 type T = Dictionary;
 
@@ -19,6 +19,8 @@ export interface ConfirmedBooking {
   end: string;
   email: string;
   location?: string;
+  /** Sofort-Anruf: statt Termin wird die Telefonnummer groß angezeigt */
+  instant?: boolean;
 }
 
 export interface PendingBooking {
@@ -177,13 +179,18 @@ export function SuccessCard({ t, locale, booking }: { t: T; locale: Locale; book
         <span className="text-xl font-bold tracking-wide text-brand-700" dir="ltr">
           {booking.reference}
         </span>
-        <span className="text-sm text-ink-soft">{formatWhen(locale, booking.start, booking.end)}</span>
+        {!booking.instant && <span className="text-sm text-ink-soft">{formatWhen(locale, booking.start, booking.end)}</span>}
         {booking.location && (
           <span className="text-sm text-ink-muted" dir="ltr">
             {booking.location}
           </span>
         )}
       </div>
+      {booking.instant && (
+        <a href={site.phoneHref} className="btn-primary relative mx-auto mt-8 !px-8 !py-5 !text-lg" dir="ltr">
+          <IconPhone size={22} /> {site.phone}
+        </a>
+      )}
       <div className="relative mt-9 flex flex-wrap justify-center gap-3">
         {DEMO ? (
           <a href="beispiel-rechnung.pdf" target="_blank" rel="noopener" className="btn-primary">

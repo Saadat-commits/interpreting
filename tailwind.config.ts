@@ -43,12 +43,16 @@ const config: Config = {
       keyframes: {
         float: { "0%,100%": { transform: "translateY(0)" }, "50%": { transform: "translateY(-8px)" } },
         "fade-up": { from: { opacity: "0", transform: "translateY(12px)" }, to: { opacity: "1", transform: "none" } },
+        "step-in": { from: { opacity: "0", transform: "translateX(28px)" }, to: { opacity: "1", transform: "none" } },
+        "step-back": { from: { opacity: "0", transform: "translateX(-28px)" }, to: { opacity: "1", transform: "none" } },
         pulseRing: { "0%": { boxShadow: "0 0 0 0 rgba(44,138,93,.35)" }, "100%": { boxShadow: "0 0 0 14px rgba(44,138,93,0)" } },
       },
       animation: {
         float: "float 7s ease-in-out infinite",
         "float-slow": "float 9s ease-in-out infinite",
         "fade-up": "fade-up .5s cubic-bezier(.2,.7,.2,1) both",
+        "step-in": "step-in .45s cubic-bezier(.2,.7,.2,1) both",
+        "step-back": "step-back .45s cubic-bezier(.2,.7,.2,1) both",
         pulseRing: "pulseRing 2.4s cubic-bezier(.2,.7,.2,1) infinite",
       },
     },

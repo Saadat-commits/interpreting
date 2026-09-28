@@ -28,6 +28,8 @@ export const bookingRequestSchema = z
     category: z.enum(["medical", "school", "youth_office", "authority", "counseling", "other"]),
     durationMinutes: z.number().int().positive(),
     start: z.string().datetime(),
+    bookerType: z.enum(["private", "organisation"]).default("private"),
+    organisation: z.object({ name: trimmed(160).min(2), caseWorker: trimmed(120).optional() }).optional(),
     clientName: trimmed(120).min(2),
     onsite: z
       .object({
@@ -36,7 +38,7 @@ export const bookingRequestSchema = z
         caseWorker: trimmed(120).optional(),
       })
       .optional(),
-    phoneSession: z.object({ callNumber: trimmed(40).refine(isPhone) }).optional(),
+    phoneSession: z.object({ callNumber: trimmed(40).refine(isPhone), mode: z.enum(["scheduled", "instant"]).default("scheduled") }).optional(),
     contact: z.object({
       name: trimmed(120).min(2),
       organisation: trimmed(160).optional(),
@@ -45,6 +47,7 @@ export const bookingRequestSchema = z
     }),
     billingSameAsAppointment: z.boolean(),
     billingAddress: address.optional(),
+    billingRecipient: trimmed(160).optional(),
     notes: trimmed(2000).optional(),
     acceptTerms: z.literal(true),
     /** Honeypot gegen Spam-Bots – muss leer bleiben */
@@ -53,9 +56,10 @@ export const bookingRequestSchema = z
   .superRefine((v, ctx) => {
     if (v.service === "onsite" && !v.onsite) ctx.addIssue({ code: "custom", path: ["onsite"], message: "required" });
     if (v.service === "phone" && !v.phoneSession) ctx.addIssue({ code: "custom", path: ["phoneSession"], message: "required" });
-    // Vor Ort mit abweichender Rechnungsadresse → Adresse nötig; telefonisch ist sie freiwillig
-    if (v.service === "onsite" && !v.billingSameAsAppointment && !v.billingAddress)
-      ctx.addIssue({ code: "custom", path: ["billingAddress"], message: "required" });
+    // Rechnungsadresse: vor Ort nur, wenn sie von der Terminadresse abweicht; telefonisch immer
+    const needsBilling = v.service === "phone" || !v.billingSameAsAppointment;
+    if (needsBilling && !v.billingAddress) ctx.addIssue({ code: "custom", path: ["billingAddress"], message: "required" });
+    if (v.bookerType === "organisation" && !v.organisation) ctx.addIssue({ code: "custom", path: ["organisation"], message: "required" });
   });
 
 export type BookingRequest = z.infer<typeof bookingRequestSchema>;

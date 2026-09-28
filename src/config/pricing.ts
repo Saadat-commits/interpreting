@@ -1,9 +1,10 @@
 /**
- * PREISE – ausschließlich serverseitig verwendet (Rechnungs-PDF).
- * Diese Datei darf nie in Client-Komponenten importiert werden:
- * Auf der Website und in den Formularen werden keine Preise angezeigt.
+ * PREISE – ausschließlich serverseitig (Rechnungs-PDF). Nie in Client-Komponenten importieren.
  *
- * TODO: Beispielwerte – vor dem Livegang durch die echten Honorare ersetzen.
+ * Regel (Vorgabe): Abgerechnet wird mindestens eine Stunde – auch bei 30 Minuten.
+ * Jede weitere Minute über 60 Minuten kostet 1,50 €.
+ *
+ * TODO: Preis für die erste Stunde (vor Ort / telefonisch) und Anfahrt eintragen.
  */
 import type { ServiceType } from "@/lib/types";
 
@@ -13,24 +14,18 @@ export const pricing = {
   smallBusiness: false,
   vatRate: 0.19,
   paymentTermDays: 14,
+  includedMinutes: 60,
+  perExtraMinuteCents: 150,
   services: {
-    phone: {
-      label: "Telefonisches Dolmetschen",
-      /** Netto-Honorar je angefangene Abrechnungseinheit */
-      unitMinutes: 15,
-      unitPriceCents: 1500, // 15,00 € je 15 Min. (= 60 €/Std.)
-      minimumMinutes: 30,
-      flatFees: [] as { label: string; cents: number }[],
-    },
     onsite: {
       label: "Dolmetschen mit persönlicher Begleitung vor Ort",
-      unitMinutes: 30,
-      unitPriceCents: 3750, // 37,50 € je 30 Min. (= 75 €/Std.)
-      minimumMinutes: 60,
-      flatFees: [{ label: "Anfahrtspauschale", cents: 2500 }],
+      firstHourCents: 7500, // TODO: Beispielwert
+      flatFees: [{ label: "Anfahrtspauschale", cents: 2500 }], // TODO: Beispielwert
     },
-  } satisfies Record<
-    ServiceType,
-    { label: string; unitMinutes: number; unitPriceCents: number; minimumMinutes: number; flatFees: { label: string; cents: number }[] }
-  >,
+    phone: {
+      label: "Telefonisches Dolmetschen",
+      firstHourCents: 6000, // TODO: Beispielwert
+      flatFees: [] as { label: string; cents: number }[],
+    },
+  } satisfies Record<ServiceType, { label: string; firstHourCents: number; flatFees: { label: string; cents: number }[] }>,
 };

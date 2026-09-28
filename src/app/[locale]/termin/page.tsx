@@ -29,16 +29,9 @@ export default async function BookingPage({
   return (
     <>
       <Header locale={locale} t={t.nav} minimal />
-      <main className="relative min-h-[80vh] overflow-hidden pb-32">
-        <div className="bg-girih pointer-events-none absolute inset-x-0 top-0 h-[420px] mask-fade-b opacity-80" aria-hidden="true" />
-        <div className="container-page relative max-w-4xl pt-10 sm:pt-14">
-          <div className="text-center">
-            <h1 className="text-4xl font-bold sm:text-5xl">{t.booking.title}</h1>
-            <p className="mt-3 text-lg text-ink-muted">{t.booking.subtitle}</p>
-          </div>
-          <div className="mt-10">
-            <BookingWizard locale={locale} t={t} initialService={initial} initialCategory={category} />
-          </div>
+      <main className="relative min-h-[80vh] overflow-x-clip pb-32">
+        <div className="container-page relative max-w-6xl">
+          <BookingWizard locale={locale} t={t} initialService={initial} initialCategory={category} />
         </div>
       </main>
     </>

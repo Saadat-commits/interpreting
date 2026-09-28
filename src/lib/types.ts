@@ -98,7 +98,11 @@ export interface Booking {
   end: string;
   timezone: string;
 
-  /** Person, für die gedolmetscht wird */
+  /** Wer bucht: Privatperson (für sich selbst) oder eine Einrichtung (Jugendamt, Jobcenter, Caritas …) */
+  bookerType: "private" | "organisation";
+  /** Nur bei Einrichtungen: Name der Einrichtung und Sachbearbeiter:in */
+  organisation?: { name: string; caseWorker?: string };
+  /** Person, für die gedolmetscht wird (bei Privatbuchung = Kontaktperson) */
   clientName: string;
 
   onsite?: {
@@ -109,12 +113,15 @@ export interface Booking {
   phoneSession?: {
     /** Unter dieser Nummer wird zum Termin angerufen */
     callNumber: string;
+    /** „scheduled“ = fester Telefontermin, „instant“ = Kunde ruft sofort an (Abrechnung nach Minuten) */
+    mode?: "scheduled" | "instant";
   };
 
   contact: ContactPerson;
   billingSameAsAppointment: boolean;
-  /** Bei telefonischen Terminen optional (Rechnung dann an Name + E-Mail) */
   billingAddress?: PostalAddress;
+  /** Rechnungsempfänger, falls abweichend (z. B. „Stadt Nürnberg – Jugendamt“) */
+  billingRecipient?: string;
   notes?: string;
 
   invoiceId?: string;
