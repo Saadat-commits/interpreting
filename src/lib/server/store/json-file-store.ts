@@ -63,8 +63,8 @@ export class JsonFileStore implements Store {
     return (await this.read()).bookings.find((b) => b.id === id) ?? null;
   }
 
-  async findBooking(pred: (b: Booking) => boolean) {
-    return (await this.read()).bookings.find(pred) ?? null;
+  async findBookingByTokenHash(hash: string) {
+    return (await this.read()).bookings.find((b) => b.verification?.tokenHash === hash) ?? null;
   }
 
   createBooking(build: (seq: number) => Booking, guard?: (existing: Booking[]) => boolean) {

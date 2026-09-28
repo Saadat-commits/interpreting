@@ -31,6 +31,25 @@ Produktion: `npm run build && npm start` (Node-Server, z. B. VPS/Docker). Tests:
 | Kontakt | Fixierte Buttons unten rechts: Anrufen + Live-Chat. Chat integriert (Nachrichten gespeichert + per E-Mail) oder echter Echtzeit-Chat über Crisp (`NEXT_PUBLIC_CRISP_WEBSITE_ID`). |
 | Nicht öffentlich | Solange `SITE_PUBLIC` ≠ `true`: `noindex` + robots-Sperre; mit `SITE_PASSWORD` zusätzlich Passwortschutz für die ganze Seite. |
 
+## Online stellen unter interpreting-nbg.de (Vercel + Supabase)
+
+Die Domain liegt bei Squarespace (ehemals Google Domains), E-Mail läuft über Google Workspace.
+**Die E-Mail-Einträge (MX, TXT/SPF, DKIM) werden nicht angefasst** – nur die Einträge für die Website.
+
+1. **Datenbank:** Supabase-Projekt anlegen (Region Frankfurt). Unter *Connect → Transaction pooler* die
+   Verbindungs-URL kopieren (Port 6543). Tabellen legt die Website beim ersten Start selbst an.
+2. **Hosting:** Auf vercel.com mit GitHub anmelden → *Add New → Project* → Repository `interpreting` importieren.
+   Unter *Environment Variables* mindestens setzen: `DATABASE_URL`, `SITE_URL=https://www.interpreting-nbg.de`,
+   `SITE_PASSWORD` (solange die Seite nicht öffentlich sein soll), `OWNER_EMAIL`, SMTP-Werte (siehe `.env.example`).
+3. **Domain:** In Vercel *Settings → Domains* `interpreting-nbg.de` und `www.interpreting-nbg.de` hinzufügen.
+4. **DNS bei Squarespace:** *Domains → interpreting-nbg.de → DNS-Einstellungen*:
+   - die Squarespace-Standardeinträge für die Website entfernen (A-Einträge `198.185.159.x` / `198.49.23.x`
+     und CNAME `www → ext-sq.squarespace.com`),
+   - neu anlegen: `A @ → 76.76.21.21` und `CNAME www → cname.vercel-dns.com`
+     (bzw. genau die Werte, die Vercel unter *Domains* anzeigt),
+   - Google-Workspace-Einträge (MX, TXT) **unverändert lassen**.
+5. Nach einigen Minuten bis Stunden ist die Seite unter der Domain erreichbar (HTTPS richtet Vercel automatisch ein).
+
 ## Vor dem Livegang anpassen
 
 - `src/config/site.ts` – Name, Anschrift, Telefon, E-Mail, Steuernummer, Bankverbindung (alle `TODO`).

@@ -102,7 +102,7 @@ export type VerifyResult =
 /** Schritt 2: Klick auf den E-Mail-Link → Termin verbindlich buchen, Rechnung + Bestätigung senden. */
 export async function verifyBooking(token: string): Promise<VerifyResult> {
   const hash = hashToken(token);
-  const booking = await getStore().findBooking((b) => b.verification?.tokenHash === hash);
+  const booking = await getStore().findBookingByTokenHash(hash);
   if (!booking || booking.status === "cancelled") return { ok: false, error: "invalid" };
   if (booking.status === "confirmed" || booking.status === "completed") return { ok: true, booking };
 

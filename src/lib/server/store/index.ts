@@ -1,16 +1,16 @@
 import type { Booking, ChatMessage, Invoice } from "@/lib/types";
 import { JsonFileStore } from "./json-file-store";
+import { PostgresStore } from "./postgres-store";
 
 /**
- * Persistenz-Schnittstelle. Aktuell als JSON-Datei umgesetzt (ideal für den
- * geschützten Vorab-Betrieb auf einem Server). Für den Livebetrieb kann hier
- * ohne Änderungen an der restlichen Anwendung eine Datenbank (z. B. Postgres)
- * eingehängt werden.
+ * Persistenz-Schnittstelle.
+ *  - DATABASE_URL gesetzt → Postgres (z. B. Supabase) – nötig für Hosting wie Vercel
+ *  - sonst JSON-Datei in DATA_DIR – ideal für Entwicklung oder einen eigenen Server
  */
 export interface Store {
   listBookings(filter?: { from?: Date; to?: Date; includeCancelled?: boolean }): Promise<Booking[]>;
   getBooking(id: string): Promise<Booking | null>;
-  findBooking(pred: (b: Booking) => boolean): Promise<Booking | null>;
+  findBookingByTokenHash(hash: string): Promise<Booking | null>;
   /** Legt eine Buchung atomar an – `guard` wird innerhalb der Sperre ausgeführt (Doppelbuchungsschutz). */
   createBooking(
     build: (seq: number) => Booking,
@@ -25,6 +25,8 @@ export interface Store {
 let instance: Store | null = null;
 
 export function getStore(): Store {
-  if (!instance) instance = new JsonFileStore(process.env.DATA_DIR || "./data");
+  if (!instance) {
+    instance = process.env.DATABASE_URL ? new PostgresStore(process.env.DATABASE_URL) : new JsonFileStore(process.env.DATA_DIR || "./data");
+  }
   return instance;
 }
