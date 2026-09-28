@@ -13,17 +13,19 @@ export function LanguageSwitcher({ locale, label, compact }: { locale: Locale; l
     // Servicezeile: schlichte Textumschaltung
     return (
       <div className="flex items-center gap-1" role="group" aria-label={label}>
-        <IconGlobe size={14} className="opacity-80" />
+        <IconGlobe size={14} className="hidden opacity-80 sm:block" />
         {(["de", "fa"] as const).map((l, i) => (
           <span key={l} className="flex items-center gap-1">
             {i > 0 && <span className="opacity-50">|</span>}
             {l === locale ? (
               <span className="font-bold underline underline-offset-4" aria-current="true" lang={l}>
-                {l === "de" ? "Deutsch" : "فارسی"}
+                <span className="sm:hidden">{l === "de" ? "DE" : "فا"}</span>
+                <span className="hidden sm:inline">{l === "de" ? "Deutsch" : "فارسی"}</span>
               </span>
             ) : (
               <Link href={href} hrefLang={l} lang={l} className="opacity-90 hover:underline">
-                {l === "de" ? "Deutsch" : "فارسی"}
+                <span className="sm:hidden">{l === "de" ? "DE" : "فا"}</span>
+                <span className="hidden sm:inline">{l === "de" ? "Deutsch" : "فارسی"}</span>
               </Link>
             )}
           </span>

@@ -1,7 +1,7 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import fontkit from "@pdf-lib/fontkit";
-import { PDFDocument, PDFFont, PDFPage, rgb, type RGB } from "pdf-lib";
+import { PDFDocument, PDFFont, PDFImage, PDFPage, rgb, type RGB } from "pdf-lib";
 
 export const A4 = { w: 595.28, h: 841.89 };
 export const M = 56; // Seitenrand
@@ -44,11 +44,16 @@ export async function createDoc(title: string) {
     semibold: await doc.embedFont(bytes.semibold, { subset: true }),
     bold: await doc.embedFont(bytes.bold, { subset: true }),
   };
+  // Logo des Inhabers (Berge); fehlt die Datei, wird ein schlichtes Zeichen gezeichnet
+  const logo = await fs
+    .readFile(path.join(process.cwd(), "public", "images", "logo-berge.png"))
+    .then((b) => doc.embedPng(b))
+    .catch(() => undefined);
   doc.setTitle(title);
   doc.setAuthor("Interpreting NBG");
   doc.setCreator("Interpreting NBG");
   doc.setLanguage("de-DE");
-  return { doc, fonts };
+  return { doc, fonts, logo };
 }
 
 /** Ersetzt Zeichen, die die Schrift nicht enthält (z. B. arabische Schrift), durch Umschreibung. */
@@ -91,10 +96,16 @@ export function text(
 }
 
 /** Kleines Markenzeichen: achtzackiger Stern (Girih-Motiv) in grünem Quadrat */
-export function drawMark(page: PDFPage, x: number, y: number, s: number) {
+/** Logo (Berge) in Höhe `s` zeichnen; liefert die Breite zurück */
+export function drawMark(page: PDFPage, x: number, y: number, s: number, logo?: PDFImage): number {
+  if (logo) {
+    const w = (logo.width / logo.height) * s;
+    page.drawImage(logo, { x, y, width: w, height: s });
+    return w;
+  }
   page.drawRectangle({ x, y, width: s, height: s, color: C.brand });
-  // zwei Berggipfel (SVG-Koordinaten 0–40, y nach unten)
   page.drawSvgPath("M6 29.5 L15.2 15 L19.8 22.1 L23.2 17.2 L34 29.5 Z", { x, y: y + s, scale: s / 40, color: C.white });
+  return s;
 }
 
 /** Abgerundetes Rechteck; (x, y) = linke untere Ecke wie bei pdf-lib üblich */

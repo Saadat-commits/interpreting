@@ -42,7 +42,7 @@ function epcPayload(invoice: Invoice) {
 }
 
 export async function renderInvoicePdf(invoice: Invoice, booking: Booking): Promise<Uint8Array> {
-  const { doc, fonts } = await createDoc(`Rechnung ${invoice.number}`);
+  const { doc, fonts, logo } = await createDoc(`Rechnung ${invoice.number}`);
   const { regular: R, semibold: S, bold: B } = fonts;
   const page = doc.addPage([A4.w, A4.h]);
   const right = A4.w - M;
@@ -55,10 +55,10 @@ export async function renderInvoicePdf(invoice: Invoice, booking: Booking): Prom
   page.drawRectangle({ x: 0, y: A4.h - 5, width: A4.w, height: 5, color: C.brand });
 
   let y = A4.h - 62;
-  roundRect(page, M - 6, y - 14, 250, 50, 12, { fill: C.white, opacity: 0.92 });
-  drawMark(page, M + 4, y - 4, 30);
-  text(page, B, site.brand, M + 44, y + 13, 15);
-  text(page, R, "Dolmetschen & Begleitung · Persisch · Dari · Paschtu", M + 44, y - 1, 7.5, C.muted);
+  roundRect(page, M - 6, y - 14, 290, 50, 12, { fill: C.white, opacity: 0.92 });
+  const markW = drawMark(page, M + 2, y - 6, 32, logo);
+  text(page, B, site.brand, M + markW + 12, y + 13, 15);
+  text(page, R, "Dolmetschen & Begleitung · Persisch · Dari · Paschtu", M + markW + 12, y - 1, 7.5, C.muted);
 
   roundRect(page, right - 176, y - 26, 182, 62, 12, { fill: C.white, opacity: 0.95 });
   label("Rechnung", right - 8, y + 18, "right");

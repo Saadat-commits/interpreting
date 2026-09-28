@@ -11,7 +11,7 @@ function fill(s: string) {
 
 export async function renderAgbPdf(): Promise<Uint8Array> {
   if (cached && process.env.NODE_ENV === "production") return cached;
-  const { doc, fonts } = await createDoc(`${agb.title} – ${site.brand}`);
+  const { doc, fonts, logo } = await createDoc(`${agb.title} – ${site.brand}`);
   const { regular: R, semibold: S, bold: B } = fonts;
   const width = A4.w - 2 * M;
   const bodySize = 9.5;
@@ -26,8 +26,8 @@ export async function renderAgbPdf(): Promise<Uint8Array> {
     page = doc.addPage([A4.w, A4.h]);
     pages.push(page);
     page.drawRectangle({ x: 0, y: A4.h - 6, width: A4.w, height: 6, color: C.brand });
-    drawMark(page, M, A4.h - 52, 18);
-    text(page, S, site.brand, M + 26, A4.h - 46, 9.5);
+    const markW = drawMark(page, M, A4.h - 54, 20, logo);
+    text(page, S, site.brand, M + markW + 8, A4.h - 46, 9.5);
     text(page, R, agb.title, A4.w - M, A4.h - 46, 8, C.muted, "right");
     y = A4.h - 90;
   };

@@ -25,8 +25,7 @@ import {
   IconSchool,
 } from "@/components/icons";
 
-/** Bilder liegen in /public/images – in der Vorschau relativ zur Seite */
-export const imageUrl = (name: string) => `${process.env.NEXT_PUBLIC_ASSET_BASE ?? "/"}images/${name}`;
+import { imageUrl } from "@/lib/asset";
 
 const serviceIcons: Record<string, ReactNode> = {
   family: <IconFamily size={22} />,
@@ -96,7 +95,7 @@ export function HomeContent({ locale, t }: { locale: Locale; t: Dictionary }) {
           <div>
             <h1 className="text-[1.9rem] font-bold leading-tight tracking-tight text-ink sm:text-[2.5rem]">{g.start.title}</h1>
             <p className="mt-4 text-[17px] leading-relaxed text-ink-soft">{g.start.lead}</p>
-            <div className="mt-6 flex flex-wrap gap-3">
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
               <Link href={hrefs.book} className="btn-primary !rounded-lg !px-6 !py-3.5">
                 {g.book} <IconArrow size={18} className="rtl:rotate-180" />
               </Link>
@@ -126,14 +125,16 @@ export function HomeContent({ locale, t }: { locale: Locale; t: Dictionary }) {
               <li key={tile.key}>
                 <Link
                   href={hrefs[tile.key]}
-                  className={`group flex h-full flex-col rounded-xl border p-5 transition hover:shadow-lift ${
+                  className={`group grid h-full grid-cols-[auto_1fr_auto] items-center gap-x-4 rounded-xl border p-4 transition hover:shadow-lift sm:flex sm:flex-col sm:items-start sm:p-5 ${
                     tile.key === "book" ? "border-brand-600 bg-brand-600 text-white" : "border-line bg-white hover:border-brand-300"
                   }`}
                 >
                   <span className={tile.key === "book" ? "text-white" : "text-brand-700"}>{tileIcons[tile.key]}</span>
-                  <span className="mt-3 text-[18px] font-bold">{tile.title}</span>
-                  <span className={`mt-1 text-[14px] leading-relaxed ${tile.key === "book" ? "text-white/85" : "text-ink-muted"}`}>{tile.text}</span>
-                  <span className={`mt-4 inline-flex items-center gap-1.5 text-[14px] font-semibold ${tile.key === "book" ? "text-white" : "text-brand-700"}`}>
+                  <span className="min-w-0 sm:mt-3">
+                    <span className="block text-[17px] font-bold sm:text-[18px]">{tile.title}</span>
+                    <span className={`mt-0.5 block text-[14px] leading-relaxed ${tile.key === "book" ? "text-white/85" : "text-ink-muted"}`}>{tile.text}</span>
+                  </span>
+                  <span className={`inline-flex items-center gap-1.5 text-[14px] font-semibold sm:mt-auto sm:pt-4 ${tile.key === "book" ? "text-white" : "text-brand-700"}`}>
                     <IconArrow size={16} className="transition group-hover:translate-x-0.5 rtl:rotate-180" />
                   </span>
                 </Link>

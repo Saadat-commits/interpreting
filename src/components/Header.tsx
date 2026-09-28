@@ -26,7 +26,7 @@ export function Header({ locale, t, active }: { locale: Locale; t: Dictionary; a
     <header className="relative z-40 bg-white">
       {/* Servicezeile */}
       <div className="bg-brand-800 text-white">
-        <div className="container-page flex h-10 items-center justify-between gap-4 text-[13px]">
+        <div className="container-page flex h-10 items-center justify-between gap-3 text-[12.5px] sm:text-[13px]">
           <div className="flex min-w-0 items-center gap-5">
             <a href={site.phoneHref} className="inline-flex items-center gap-1.5 whitespace-nowrap font-semibold hover:underline">
               <IconPhone size={14} /> <span dir="ltr">{site.phone}</span>
@@ -35,9 +35,9 @@ export function Header({ locale, t, active }: { locale: Locale; t: Dictionary; a
               <IconMail size={14} /> <span dir="ltr">{site.email}</span>
             </a>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex shrink-0 items-center gap-3 sm:gap-5">
             <button type="button" onClick={openHelp} className="inline-flex items-center gap-1.5 font-semibold hover:underline">
-              <IconHelp size={15} /> {g.help}
+              <IconHelp size={15} /> <span>{g.help}</span>
             </button>
             <LanguageSwitcher locale={locale} label={t.nav.switchLabel} compact />
           </div>
@@ -68,7 +68,7 @@ export function Header({ locale, t, active }: { locale: Locale; t: Dictionary; a
                     href={it.href}
                     onClick={() => setOpen(false)}
                     aria-current={isActive ? "page" : undefined}
-                    className={`block border-b-[3px] px-1 py-3 text-[15px] font-semibold transition md:px-4 ${
+                    className={`block whitespace-nowrap border-b-[3px] px-1 py-3 text-[15px] font-semibold transition md:px-2.5 md:text-[14px] lg:px-4 lg:text-[15px] ${
                       isActive ? "border-brand-600 text-brand-800" : "border-transparent text-ink-soft hover:border-brand-200 hover:text-brand-700"
                     } ${it.key === "book" && !isActive ? "text-brand-700" : ""}`}
                   >
