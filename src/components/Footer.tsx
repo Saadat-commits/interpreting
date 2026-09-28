@@ -69,7 +69,7 @@ export function Footer({ locale, t }: { locale: Locale; t: Dictionary }) {
             <Link href={`/${locale}/datenschutz`} className="hover:text-ink">
               {t.footer.privacy}
             </Link>
-            <a href="/agb.pdf" target="_blank" rel="noopener" className="hover:text-ink">
+            <a href={site.agbUrl} target="_blank" rel="noopener" className="hover:text-ink">
               {t.footer.terms}
             </a>
           </nav>

@@ -23,6 +23,7 @@ export const site = {
     name: "Musterbank", // TODO
   },
   timezone: "Europe/Berlin",
+  agbUrl: process.env.NEXT_PUBLIC_AGB_URL || "/agb.pdf",
 } as const;
 
 export type Site = typeof site;

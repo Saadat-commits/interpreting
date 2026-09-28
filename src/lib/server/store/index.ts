@@ -10,6 +10,7 @@ import { JsonFileStore } from "./json-file-store";
 export interface Store {
   listBookings(filter?: { from?: Date; to?: Date; includeCancelled?: boolean }): Promise<Booking[]>;
   getBooking(id: string): Promise<Booking | null>;
+  findBooking(pred: (b: Booking) => boolean): Promise<Booking | null>;
   /** Legt eine Buchung atomar an – `guard` wird innerhalb der Sperre ausgeführt (Doppelbuchungsschutz). */
   createBooking(
     build: (seq: number) => Booking,

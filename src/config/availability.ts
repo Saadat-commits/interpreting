@@ -24,6 +24,8 @@ export const availabilityConfig = {
   bufferMinutes: { phone: 15, onsite: 45 } satisfies Record<ServiceType, number>,
   /** Wählbare voraussichtliche Dauer in Minuten */
   durations: { phone: [30, 60, 90, 120], onsite: [60, 120, 180, 240] } satisfies Record<ServiceType, number[]>,
+  /** So lange wird ein Termin nach der Buchung für die E-Mail-Bestätigung freigehalten */
+  confirmationHoldMinutes: 60,
   /** Gesetzliche Feiertage: bundesweit + Bayern (Nürnberg) */
   holidayRegion: "BY" as const,
   /** Zusätzliche gesperrte Tage (Urlaub etc.), Format YYYY-MM-DD */

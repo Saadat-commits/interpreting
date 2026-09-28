@@ -3,6 +3,10 @@ import { notFound } from "next/navigation";
 import { Header } from "@/components/Header";
 import { BookingWizard } from "@/components/booking/BookingWizard";
 import { getDictionary, isLocale } from "@/lib/i18n";
+import type { AppointmentCategory } from "@/lib/types";
+
+// Liest Query-Parameter (Leistung, Anlass bzw. Bestätigungs-Token) → immer dynamisch rendern
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
@@ -14,13 +18,14 @@ export default async function BookingPage({
   searchParams,
 }: {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ leistung?: string }>;
+  searchParams: Promise<{ leistung?: string; anlass?: string }>;
 }) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
-  const { leistung } = await searchParams;
+  const { leistung, anlass } = await searchParams;
   const t = getDictionary(locale);
   const initial = leistung === "phone" || leistung === "onsite" ? leistung : undefined;
+  const category = anlass && anlass in t.categories ? (anlass as AppointmentCategory) : undefined;
   return (
     <>
       <Header locale={locale} t={t.nav} minimal />
@@ -33,7 +38,7 @@ export default async function BookingPage({
             <p className="mt-3 text-lg text-ink-muted">{t.booking.subtitle}</p>
           </div>
           <div className="mt-10">
-            <BookingWizard locale={locale} t={t} initialService={initial} />
+            <BookingWizard locale={locale} t={t} initialService={initial} initialCategory={category} />
           </div>
         </div>
       </main>

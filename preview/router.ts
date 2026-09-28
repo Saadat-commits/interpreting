@@ -13,10 +13,6 @@ export function subscribe(l: Listener) {
 }
 
 export function navigate(href: string) {
-  if (href === "/agb.pdf") {
-    window.open("agb.pdf", "_blank");
-    return;
-  }
   const [pathAndQuery, hash] = href.split("#");
   const next = pathAndQuery || current.split("?")[0];
   if (next !== current) {

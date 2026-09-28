@@ -120,6 +120,14 @@ export interface Booking {
   calendar: CalendarLink;
   payment: PaymentInfo;
 
+  /** Double-Opt-in: Buchung wird erst nach Klick auf den E-Mail-Link verbindlich */
+  verification?: {
+    tokenHash: string;
+    expiresAt: string;
+    sentAt: string;
+    verifiedAt?: string;
+  };
+
   acceptedTermsAt: string;
   createdAt: string;
   updatedAt: string;

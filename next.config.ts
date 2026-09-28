@@ -5,7 +5,7 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     "/**": ["./assets/fonts/**"],
   },
-  serverExternalPackages: ["pdf-lib", "@pdf-lib/fontkit", "nodemailer"],
+  serverExternalPackages: ["pdf-lib", "@pdf-lib/fontkit", "nodemailer", "qrcode"],
   poweredByHeader: false,
 };
 

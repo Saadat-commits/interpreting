@@ -11,6 +11,7 @@ import { intlLocale } from "@/lib/i18n";
 import type { AppointmentCategory, Language, Locale, PostalAddress, ServiceType } from "@/lib/types";
 import { IconAlert, IconArrow, IconCalendar, IconCheck, IconPhone, IconPin, categoryIcons } from "../icons";
 import { AddressField } from "./AddressField";
+import { CheckEmail, type PendingBooking } from "./BookingDone";
 import { CalendarPicker } from "./CalendarPicker";
 
 type T = Dictionary;
@@ -40,12 +41,22 @@ function writeRemembered(r: Remembered) {
   }
 }
 
-export function BookingWizard({ locale, t, initialService }: { locale: Locale; t: T; initialService?: ServiceType }) {
+export function BookingWizard({
+  locale,
+  t,
+  initialService,
+  initialCategory,
+}: {
+  locale: Locale;
+  t: T;
+  initialService?: ServiceType;
+  initialCategory?: AppointmentCategory;
+}) {
   const b = t.booking;
   const [step, setStep] = useState(0);
   const [service, setService] = useState<ServiceType | null>(initialService ?? null);
   const [language, setLanguage] = useState<Language | null>(null);
-  const [category, setCategory] = useState<AppointmentCategory | null>(null);
+  const [category, setCategory] = useState<AppointmentCategory | null>(initialCategory ?? null);
   const [duration, setDuration] = useState<number>(60);
   const [start, setStart] = useState<string | null>(null);
   const [calendarRefresh, setCalendarRefresh] = useState(0);
@@ -71,7 +82,7 @@ export function BookingWizard({ locale, t, initialService }: { locale: Locale; t
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [slotError, setSlotError] = useState(false);
-  const [result, setResult] = useState<{ reference: string; start: string; end: string; email: string } | null>(null);
+  const [pending, setPending] = useState<PendingBooking | null>(null);
   const topRef = useRef<HTMLDivElement>(null);
 
   // Wiederkehrende Kund:innen: Kontaktdaten vorausfüllen
@@ -121,13 +132,13 @@ export function BookingWizard({ locale, t, initialService }: { locale: Locale; t
   const errors = useMemo(() => {
     const e: Record<string, string> = {};
     if (clientName.trim().length < 2) e.clientName = b.errors.name;
-    if (service === "onsite" && !isValidAddress(onsiteAddress)) e.onsiteAddress = t.booking.addressField.pick;
+    if (service === "onsite" && !isValidAddress(onsiteAddress)) e.onsiteAddress = t.booking.addressField.missing;
     if (service === "phone" && !isPhone(callNumber)) e.callNumber = b.errors.phone;
     if (contact.name.trim().length < 2) e.contactName = b.errors.name;
     if (!emailRe.test(contact.email.trim())) e.email = b.errors.email;
     if (!isPhone(contact.phone)) e.phone = b.errors.phone;
     const needsBilling = service === "phone" || !billingSame;
-    if (needsBilling && !isValidAddress(billingAddress)) e.billingAddress = t.booking.addressField.pick;
+    if (needsBilling && !isValidAddress(billingAddress)) e.billingAddress = t.booking.addressField.missing;
     return e;
   }, [clientName, service, onsiteAddress, callNumber, contact, billingSame, billingAddress, b, t]);
 
@@ -194,7 +205,7 @@ export function BookingWizard({ locale, t, initialService }: { locale: Locale; t
         return;
       }
       if (!res.ok) throw new Error(String(res.status));
-      setResult(await res.json());
+      setPending(await res.json());
       writeRemembered({
         contact: { ...contact },
         billingAddress: service === "onsite" && billingSame ? onsiteAddress : billingAddress,
@@ -221,8 +232,8 @@ export function BookingWizard({ locale, t, initialService }: { locale: Locale; t
   const endOf = (iso: string) => new Date(new Date(iso).getTime() + duration * 60000).toISOString();
 
   /* ---------------- Erfolg ---------------- */
-  if (step === 4 && result) {
-    return <Success t={t} locale={locale} result={result} when={fmtWhen(result.start, result.end)} service={service!} address={onsiteAddress} institution={institution} />;
+  if (step === 4 && pending) {
+    return <CheckEmail t={t} locale={locale} pending={pending} onChangeEmail={() => (setPending(null), setStep(2))} />;
   }
 
   return (
@@ -335,10 +346,10 @@ export function BookingWizard({ locale, t, initialService }: { locale: Locale; t
               </p>
             )}
 
-            <div className="mt-8 grid gap-10">
+            <div className="mt-8 grid grid-cols-1 gap-10">
               {/* Terminort / Anruf */}
               <Section title={service === "onsite" ? b.details.appointment : b.service.phone.title}>
-                <div className="grid gap-5 sm:grid-cols-2">
+                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
                   {service === "onsite" && (
                     <>
                       <div className="sm:col-span-2">
@@ -399,7 +410,7 @@ export function BookingWizard({ locale, t, initialService }: { locale: Locale; t
 
               {/* Kontakt */}
               <Section title={b.details.contactTitle}>
-                <div className="grid gap-5 sm:grid-cols-2">
+                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
                   <Field label={b.details.contactName} error={showErr("contactName")}>
                     <input className={`field ${showErr("contactName") ? "field-invalid" : ""}`} value={contact.name} onChange={(e) => setContact({ ...contact, name: e.target.value })} onBlur={touch("contactName")} autoComplete="name" />
                   </Field>
@@ -502,7 +513,7 @@ export function BookingWizard({ locale, t, initialService }: { locale: Locale; t
               </span>
               <span className="text-[15px] leading-relaxed text-ink-soft">
                 {b.review.terms1}{" "}
-                <a href="/agb.pdf" target="_blank" rel="noopener" className="font-semibold text-brand-700 underline decoration-brand-200 underline-offset-2">
+                <a href={site.agbUrl} target="_blank" rel="noopener" className="font-semibold text-brand-700 underline decoration-brand-200 underline-offset-2">
                   {b.review.termsLink}
                 </a>{" "}
                 {b.review.terms2}{" "}
@@ -689,75 +700,6 @@ function ReviewRow({ label, children, onEdit, editLabel }: { label: string; chil
       <button type="button" onClick={onEdit} className="self-start text-sm font-semibold text-brand-700 hover:underline sm:self-center">
         {editLabel}
       </button>
-    </div>
-  );
-}
-
-function Success({
-  t,
-  locale,
-  result,
-  when,
-  service,
-  address,
-  institution,
-}: {
-  t: T;
-  locale: Locale;
-  result: { reference: string; start: string; end: string; email: string };
-  when: string;
-  service: ServiceType;
-  address: PostalAddress | null;
-  institution: string;
-}) {
-  const s = t.booking.success;
-  const ics = useMemo(() => {
-    const f = (iso: string) => iso.replace(/[-:]/g, "").replace(/\.\d{3}/, "");
-    const loc = service === "onsite" && address ? [institution, formatAddress(address)].filter(Boolean).join(", ") : "Telefon";
-    const body = [
-      "BEGIN:VCALENDAR",
-      "VERSION:2.0",
-      "PRODID:-//Interpreting NBG//Buchung//DE",
-      "BEGIN:VEVENT",
-      `UID:${result.reference}@interpreting-nbg.de`,
-      `DTSTAMP:${f(new Date().toISOString())}`,
-      `DTSTART:${f(result.start)}`,
-      `DTEND:${f(result.end)}`,
-      `SUMMARY:Dolmetschtermin ${result.reference} (${site.brand})`,
-      `LOCATION:${loc.replace(/,/g, "\\,")}`,
-      "END:VEVENT",
-      "END:VCALENDAR",
-    ].join("\r\n");
-    return `data:text/calendar;charset=utf-8,${encodeURIComponent(body)}`;
-  }, [result, service, address, institution]);
-
-  return (
-    <div className="relative overflow-hidden rounded-[2rem] border border-line bg-white p-8 text-center shadow-deep animate-fade-up sm:p-14">
-      <div className="bg-girih pointer-events-none absolute inset-0 opacity-70 mask-fade-b" aria-hidden="true" />
-      <div className="relative mx-auto grid h-20 w-20 place-items-center rounded-full bg-brand-600 text-white shadow-lift ring-8 ring-brand-50">
-        <IconCheck size={38} strokeWidth={2.4} />
-      </div>
-      <h2 className="relative mx-auto mt-8 max-w-xl text-3xl font-bold sm:text-4xl">{s.title}</h2>
-      <p className="relative mx-auto mt-4 max-w-lg text-lg leading-relaxed text-ink-soft">
-        {s.text.split("{email}")[0]}
-        <b dir="ltr">{result.email}</b>
-        {s.text.split("{email}")[1]}
-      </p>
-      <div className="relative mx-auto mt-8 inline-flex flex-col gap-1 rounded-2xl border border-line bg-paper px-6 py-4 text-start">
-        <span className="text-xs font-semibold uppercase tracking-wider text-ink-muted rtl:tracking-normal">{s.reference}</span>
-        <span className="text-xl font-bold tracking-wide text-brand-700" dir="ltr">
-          {result.reference}
-        </span>
-        <span className="text-sm text-ink-soft">{when}</span>
-      </div>
-      <div className="relative mt-9 flex flex-wrap justify-center gap-3">
-        <a href={ics} download={`${result.reference}.ics`} className="btn-primary">
-          <IconCalendar size={18} /> {s.addToCalendar}
-        </a>
-        <Link href={`/${locale}`} className="btn-ghost">
-          {s.home}
-        </Link>
-      </div>
     </div>
   );
 }

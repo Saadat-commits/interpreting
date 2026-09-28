@@ -35,3 +35,54 @@ export function detectCategory(text: string | undefined): AppointmentCategory | 
   if (/amt|behörde|jobcenter|agentur für arbeit|rathaus|bürgeramt|ausländer|landratsamt|gericht|polizei|sozialamt|standesamt|finanzamt|bamf/.test(t)) return "authority";
   return null;
 }
+
+/** Korrigiert häufige Schreibweisen: „Luisenstraß“ / „Luisenstr.“ → „Luisenstraße“ */
+export function normalizeStreet(s: string) {
+  let t = s.trim().replace(/\s+/g, " ");
+  t = t.replace(/(str|straß|strasse|straße|str\.)$/i, (m) => (m[0] === "S" ? "Straße" : "straße"));
+  t = t.replace(/\b(str|straß|strasse|str\.)(?=\s|$)/gi, (m) => (m[0] === "S" ? "Straße" : "straße"));
+  t = t.replace(/(\S)(Straße)$/, "$1straße");
+  return t.charAt(0).toUpperCase() + t.slice(1);
+}
+
+function titleCase(s: string) {
+  return s
+    .trim()
+    .replace(/\s+/g, " ")
+    .split(" ")
+    .map((w) => (w.length > 2 ? w.charAt(0).toUpperCase() + w.slice(1) : w))
+    .join(" ");
+}
+
+/**
+ * Erkennt frei getippte Adressen, z. B.
+ *   „Luisenstraß 3 90762 Fürth“, „Hauptstr. 12a, 90402 Nürnberg“, „90402 Nürnberg, Königstraße 5“.
+ * Gibt die erkannten Teile zurück (auch unvollständig), damit nichts erneut getippt werden muss.
+ */
+export function parseFreeAddress(input: string): Omit<PostalAddress, "label" | "source" | "country"> | null {
+  const text = input.replace(/\s+/g, " ").trim();
+  if (text.length < 4) return null;
+  const plzMatch = text.match(/\b(\d{5})\b\s*([A-Za-zÄÖÜäöüß][A-Za-zÄÖÜäöüß .()\-/]*?)?(?=,|$|\s\d)/);
+  let rest = text;
+  let postalCode = "";
+  let city = "";
+  if (plzMatch) {
+    postalCode = plzMatch[1];
+    city = (plzMatch[2] ?? "").replace(/[,\s]+$/, "").trim();
+    rest = (text.slice(0, plzMatch.index) + " " + text.slice(plzMatch.index! + plzMatch[0].length)).replace(/,/g, " ").trim();
+  } else {
+    rest = text.replace(/,/g, " ");
+  }
+  const streetMatch = rest.match(/^(.*?[A-Za-zÄÖÜäöüß.])\s*(\d+\s*[a-zA-Z]?(?:\s*[-/]\s*\d+[a-zA-Z]?)?)\s*(.*)$/);
+  let street = "";
+  let houseNumber = "";
+  if (streetMatch) {
+    street = normalizeStreet(streetMatch[1]);
+    houseNumber = streetMatch[2].replace(/\s+/g, "");
+    if (!city && streetMatch[3]) city = streetMatch[3];
+  } else if (rest) {
+    street = normalizeStreet(rest);
+  }
+  if (!street && !postalCode) return null;
+  return { street, houseNumber, postalCode, city: city ? titleCase(city) : "" };
+}

@@ -182,7 +182,7 @@ export function FloatingContact({ locale, t }: { locale: Locale; t: Dictionary["
       <div className="flex items-center gap-3">
         <a
           href={site.phoneHref}
-          className="group flex h-14 items-center gap-2 rounded-full border border-line bg-white pe-5 ps-2 text-sm font-semibold text-ink shadow-lift transition hover:-translate-y-0.5 hover:shadow-deep"
+          className="group flex h-14 items-center gap-2 rounded-full border border-line bg-white p-2 text-sm font-semibold text-ink shadow-lift transition hover:-translate-y-0.5 hover:shadow-deep sm:pe-5"
           aria-label={`${t.call}: ${site.phone}`}
         >
           <span className="grid h-10 w-10 place-items-center rounded-full bg-brand-50 text-brand-700 transition group-hover:bg-brand-600 group-hover:text-white">
@@ -191,7 +191,6 @@ export function FloatingContact({ locale, t }: { locale: Locale; t: Dictionary["
           <span className="hidden sm:inline" dir="ltr">
             {site.phone}
           </span>
-          <span className="sm:hidden">{t.call}</span>
         </a>
         <button
           type="button"

@@ -5,6 +5,9 @@ import { HomeContent } from "@/components/HomeContent";
 import { LegalPage } from "@/components/LegalPage";
 import { FloatingContact } from "@/components/FloatingContact";
 import { BookingWizard } from "@/components/booking/BookingWizard";
+import { VerifyBooking } from "@/components/booking/BookingDone";
+import { DatenschutzContent, ImpressumContent } from "@/components/LegalContent";
+import type { AppointmentCategory } from "@/lib/types";
 import { site } from "@/config/site";
 import { dirOf, getDictionary } from "@/lib/i18n";
 import type { Locale } from "@/lib/types";
@@ -38,8 +41,22 @@ function App() {
   }, [locale]);
 
   let content;
-  if (page === "termin") {
-    const leistung = new URLSearchParams(query).get("leistung");
+  const params = new URLSearchParams(query);
+  if (page === "termin" && seg[2] === "bestaetigen") {
+    content = (
+      <>
+        <Header locale={locale} t={t.nav} minimal />
+        <main className="relative min-h-[80vh] overflow-hidden pb-32">
+          <div className="bg-girih pointer-events-none absolute inset-x-0 top-0 h-[420px] mask-fade-b opacity-80" aria-hidden="true" />
+          <div className="container-page relative max-w-3xl pt-12">
+            <VerifyBooking key={path} t={t} locale={locale} token={params.get("t") ?? ""} />
+          </div>
+        </main>
+      </>
+    );
+  } else if (page === "termin") {
+    const leistung = params.get("leistung");
+    const anlass = params.get("anlass");
     content = (
       <>
         <Header locale={locale} t={t.nav} minimal />
@@ -51,7 +68,13 @@ function App() {
               <p className="mt-3 text-lg text-ink-muted">{t.booking.subtitle}</p>
             </div>
             <div className="mt-10">
-              <BookingWizard key={path} locale={locale} t={t} initialService={leistung === "phone" || leistung === "onsite" ? leistung : undefined} />
+              <BookingWizard
+                key={path}
+                locale={locale}
+                t={t}
+                initialService={leistung === "phone" || leistung === "onsite" ? leistung : undefined}
+                initialCategory={anlass && anlass in t.categories ? (anlass as AppointmentCategory) : undefined}
+              />
             </div>
           </div>
         </main>
@@ -60,7 +83,7 @@ function App() {
   } else if (page === "impressum" || page === "datenschutz") {
     content = (
       <LegalPage locale={locale} t={t} title={page === "impressum" ? t.legal.imprint : t.legal.privacy}>
-        <p>In der Vorschau nicht enthalten – auf der fertigen Website steht hier {page === "impressum" ? "das Impressum" : "die Datenschutzerklärung"}.</p>
+        {page === "impressum" ? <ImpressumContent /> : <DatenschutzContent />}
       </LegalPage>
     );
   } else {
@@ -80,7 +103,7 @@ function App() {
 document.addEventListener("click", (e) => {
   const a = (e.target as HTMLElement).closest("a");
   const href = a?.getAttribute("href");
-  if (!a || !href || !href.startsWith("/") || e.defaultPrevented) return;
+  if (!a || !href || !href.startsWith("/") || e.defaultPrevented || a.target === "_blank") return;
   e.preventDefault();
   navigate(href);
 });

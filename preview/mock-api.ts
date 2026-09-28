@@ -35,6 +35,7 @@ const json = (data: unknown, status = 200) =>
   new Response(JSON.stringify(data), { status, headers: { "Content-Type": "application/json" } });
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 let seq = 41;
+const pending = new Map<string, { reference: string; start: string; end: string; email: string; location?: string }>();
 
 export function installMockApi() {
   const real = window.fetch.bind(window);
@@ -55,7 +56,7 @@ export function installMockApi() {
       const q = (url.searchParams.get("q") ?? "").toLowerCase();
       const words = q.split(/\s+/).filter(Boolean);
       const hits = addresses.filter((a) => words.every((w) => `${a.placeName ?? ""} ${a.label}`.toLowerCase().includes(w)));
-      const list = (hits.length ? hits : addresses.filter((a) => a.city.toLowerCase().includes(q.slice(0, 3)))).slice(0, 6);
+      const list = hits.slice(0, 6);
       return json({
         suggestions: list.map((a, i) => ({
           id: `demo-${i}-${a.label}`,
@@ -70,7 +71,21 @@ export function installMockApi() {
       const body = JSON.parse(String(init?.body ?? "{}"));
       const start = new Date(body.start);
       const end = new Date(start.getTime() + body.durationMinutes * 60000);
-      return json({ reference: `T-${start.getFullYear()}-${String(++seq).padStart(4, "0")}`, start: start.toISOString(), end: end.toISOString(), email: body.contact?.email }, 201);
+      const token = `demo${++seq}`;
+      const location = body.onsite ? [body.onsite.institution, body.onsite.address?.label].filter(Boolean).join(", ") : undefined;
+      pending.set(token, { reference: `T-${start.getFullYear()}-${String(seq).padStart(4, "0")}`, start: start.toISOString(), end: end.toISOString(), email: body.contact?.email, location });
+      const holdUntil = new Date(Date.now() + 60 * 60000).toISOString();
+      return json({ id: token, status: "pending", email: body.contact?.email, start: start.toISOString(), end: end.toISOString(), holdUntil, demoToken: token }, 201);
+    }
+    if (path === "/api/bookings/verify") {
+      await wait(1100);
+      const { token } = JSON.parse(String(init?.body ?? "{}"));
+      const b = pending.get(token);
+      return b ? json(b) : json({ error: "invalid" }, 404);
+    }
+    if (path === "/api/bookings/resend") {
+      await wait(600);
+      return json({ ok: true });
     }
     if (path === "/api/chat") {
       await wait(500);

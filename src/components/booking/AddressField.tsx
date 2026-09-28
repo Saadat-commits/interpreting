@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from "react";
-import { addressProblems, formatAddress } from "@/lib/address";
+import { addressProblems, formatAddress, parseFreeAddress } from "@/lib/address";
 import type { Dictionary } from "@/lib/i18n";
 import type { Locale, PostalAddress } from "@/lib/types";
 import { IconAlert, IconCheck, IconPin, IconSearch } from "../icons";
@@ -12,6 +12,8 @@ interface Suggestion {
   subtitle: string;
   address?: PostalAddress;
   needsDetails?: boolean;
+  /** Aus der Eingabe erkannte Adresse (funktioniert auch ohne Vorschlagsdienst) */
+  typed?: boolean;
 }
 
 type T = Dictionary["booking"]["addressField"];
@@ -72,8 +74,6 @@ export function AddressField({
         const data = (await res.json()) as { suggestions: Suggestion[] };
         setItems(data.suggestions);
         setUnavailable(false);
-        setActive(data.suggestions.length ? 0 : -1);
-        setOpen(true);
       } catch (e) {
         if ((e as Error).name !== "AbortError") {
           setUnavailable(true);
@@ -88,6 +88,43 @@ export function AddressField({
       ctrl.abort();
     };
   }, [query, mode, value, locale, session]);
+
+  // Frei getippte, vollständige Adresse direkt als ersten Vorschlag anbieten
+  const typed = useMemo<Suggestion | null>(() => {
+    const p = parseFreeAddress(query);
+    if (!p) return null;
+    const a: PostalAddress = { ...p, country: "DE", label: "", source: "manual" };
+    if (addressProblems(a).length) return null;
+    a.label = formatAddress(a);
+    return { id: "typed", title: `${a.street} ${a.houseNumber}`, subtitle: `${a.postalCode} ${a.city}`, address: a, typed: true };
+  }, [query]);
+
+  const list = useMemo(() => {
+    if (!typed) return items;
+    const key = (x?: PostalAddress) => (x ? `${x.street}|${x.houseNumber}|${x.postalCode}`.toLowerCase() : "");
+    const dup = items.some((i) => i.address && key(i.address) === key(typed.address));
+    return dup ? items : [typed, ...items];
+  }, [typed, items]);
+
+  useEffect(() => {
+    if (open) setActive(list.length ? 0 : -1);
+  }, [list, open]);
+
+  /** Beim Verlassen des Feldes: erkannte Adresse übernehmen oder fehlende Teile gezielt abfragen – ohne Fehlermeldung */
+  const settle = () => {
+    setOpen(false);
+    if (value || mode !== "search" || !query.trim()) return;
+    if (typed) {
+      onChange(typed.address!);
+      return;
+    }
+    const p = parseFreeAddress(query);
+    if (p && (p.street || p.postalCode) && query.trim().length >= 5) {
+      setManual({ ...p, placeName: undefined });
+      setManualTouched({});
+      setMode("manual");
+    } else setTouched(true);
+  };
 
   const choose = async (s: Suggestion) => {
     setOpen(false);
@@ -137,16 +174,21 @@ export function AddressField({
   }, [manual, mode]);
 
   const onKey = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (!open || !items.length) return;
+    if (e.key === "Enter" && (!open || !list.length)) {
+      e.preventDefault();
+      settle();
+      return;
+    }
+    if (!open || !list.length) return;
     if (e.key === "ArrowDown") {
       e.preventDefault();
-      setActive((a) => (a + 1) % items.length);
+      setActive((a) => (a + 1) % list.length);
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
-      setActive((a) => (a - 1 + items.length) % items.length);
+      setActive((a) => (a - 1 + list.length) % list.length);
     } else if (e.key === "Enter" && active >= 0) {
       e.preventDefault();
-      choose(items[active]);
+      choose(list[active]);
     } else if (e.key === "Escape") setOpen(false);
   };
 
@@ -168,8 +210,8 @@ export function AddressField({
             <IconCheck size={18} strokeWidth={2.4} />
           </span>
           <div className="min-w-0 flex-1" dir="ltr">
-            {value.placeName && <div className="truncate text-[15px] font-bold text-ink">{value.placeName}</div>}
-            <div className={`truncate ${value.placeName ? "text-sm text-ink-soft" : "text-[15px] font-semibold text-ink"}`}>{formatAddress(value)}</div>
+            {value.placeName && <div className="break-words text-[15px] font-bold text-ink">{value.placeName}</div>}
+            <div className={`break-words ${value.placeName ? "text-sm text-ink-soft" : "text-[15px] font-semibold text-ink"}`}>{formatAddress(value)}</div>
             <div className="mt-0.5 text-xs font-medium text-brand-700" dir={locale === "fa" ? "rtl" : "ltr"}>
               {t.selected}
             </div>
@@ -246,7 +288,8 @@ export function AddressField({
   }
 
   /* ---------- Suche ---------- */
-  const showPickError = touched && !open && query.trim().length > 0 && !value;
+  const showHint = touched && !open && query.trim().length > 0 && !value;
+  const showList = open && query.trim().length >= 3 && (!loading || list.length > 0);
   return (
     <div className="relative">
       <label className="field-label" htmlFor={`${id}-q`}>
@@ -258,33 +301,37 @@ export function AddressField({
           id={`${id}-q`}
           ref={inputRef}
           role="combobox"
-          aria-expanded={open}
+          aria-expanded={showList}
           aria-controls={listId}
           aria-autocomplete="list"
-          aria-activedescendant={active >= 0 ? `${listId}-${active}` : undefined}
-          aria-invalid={showPickError}
+          aria-activedescendant={showList && active >= 0 ? `${listId}-${active}` : undefined}
           autoComplete="off"
+          autoCorrect="off"
+          spellCheck={false}
+          enterKeyHint="done"
           autoFocus={autoFocus}
-          className={`field !ps-11 ${showPickError ? "field-invalid" : ""}`}
+          className="field !pe-11 !ps-11"
           placeholder={placeholder}
           value={query}
           onChange={(e) => {
             setQuery(e.target.value);
+            setTouched(false);
             setOpen(true);
           }}
-          onFocus={() => items.length && setOpen(true)}
-          onBlur={() => setTimeout(() => (setOpen(false), setTouched(true)), 150)}
+          onFocus={() => setOpen(true)}
+          onBlur={() => setTimeout(settle, 180)}
           onKeyDown={onKey}
+          dir="ltr"
         />
         {loading && (
           <span className="absolute end-4 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin rounded-full border-2 border-brand-200 border-t-brand-600" aria-label={t.searching} />
         )}
-      </div>
-
-      {open && query.trim().length >= 3 && !loading && (
+      {showList && (
         <ul id={listId} role="listbox" className="absolute inset-x-0 top-full z-30 mt-2 max-h-80 overflow-auto rounded-2xl border border-line bg-white p-1.5 shadow-deep">
-          {items.length === 0 && !unavailable && <li className="px-4 py-3 text-sm text-ink-muted">{t.noResults}</li>}
-          {items.map((s, i) => (
+          {list.length === 0 && (
+            <li className="px-4 py-3 text-sm leading-relaxed text-ink-muted">{t.keepTyping}</li>
+          )}
+          {list.map((s, i) => (
             <li
               key={s.id}
               id={`${listId}-${i}`}
@@ -297,30 +344,41 @@ export function AddressField({
               dir="ltr"
             >
               <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg ${i === active ? "bg-brand-600 text-white" : "bg-paper text-brand-700"}`}>
-                <IconPin size={16} />
+                {s.typed ? <IconCheck size={16} strokeWidth={2.4} /> : <IconPin size={16} />}
               </span>
-              <span className="min-w-0">
-                <span className="block truncate text-[15px] font-semibold text-ink">{s.title}</span>
-                <span className="block truncate text-[13px] text-ink-muted">{s.subtitle}</span>
+              <span className="min-w-0 flex-1">
+                <span className="block break-words text-[15px] font-semibold leading-snug text-ink">{s.title}</span>
+                <span className="block break-words text-[13px] text-ink-muted">{s.subtitle}</span>
+                {s.typed && (
+                  <span className="mt-1 inline-block rounded-full bg-brand-600 px-2.5 py-0.5 text-[11px] font-semibold text-white sm:hidden" dir={locale === "fa" ? "rtl" : "ltr"}>
+                    {t.useTyped}
+                  </span>
+                )}
               </span>
+              {s.typed && (
+                <span className="hidden shrink-0 rounded-full bg-brand-600 px-3 py-1 text-xs font-semibold text-white sm:inline-block" dir={locale === "fa" ? "rtl" : "ltr"}>
+                  {t.useTyped}
+                </span>
+              )}
             </li>
           ))}
         </ul>
       )}
+      </div>
 
-      {unavailable && <p className="mt-2 text-sm text-ink-muted">{t.unavailable}</p>}
-      {showPickError && !unavailable && (
-        <p className="field-error">
-          <IconAlert size={16} className="mt-px shrink-0" /> {t.pick}
-        </p>
-      )}
+      <p className={`mt-2 flex items-start gap-1.5 text-[13px] leading-relaxed ${showHint ? "text-brand-800" : "text-ink-muted"}`}>
+        {showHint && <IconAlert size={15} className="mt-0.5 shrink-0 text-brand-600" />}
+        {t.hint}
+      </p>
       <button
         type="button"
         onClick={() => {
+          const p = parseFreeAddress(query);
+          setManual({ street: p?.street ?? "", houseNumber: p?.houseNumber ?? "", postalCode: p?.postalCode ?? "", city: p?.city ?? "", placeName: undefined });
+          setManualTouched({});
           setMode("manual");
-          setManual((m) => ({ ...m, street: m.street || query.replace(/\d.*$/, "").trim() }));
         }}
-        className={`mt-2 text-sm font-semibold hover:underline ${unavailable ? "text-brand-700" : "text-ink-muted"}`}
+        className={`mt-1 text-sm font-semibold hover:underline ${unavailable ? "text-brand-700" : "text-ink-muted"}`}
       >
         {t.manual}
       </button>

@@ -97,6 +97,35 @@ ${rows
   .join("")}</table>`;
 }
 
+function button(href: string, label: string) {
+  return `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:26px 0 10px"><tr><td style="border-radius:999px;background:#1F7049">
+<a href="${esc(href)}" style="display:inline-block;padding:15px 30px;font-size:16px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:999px">${esc(label)}</a></td></tr></table>`;
+}
+
+/** Double-Opt-in: Bitte um Bestätigung der E-Mail-Adresse, erst danach ist der Termin verbindlich. */
+export async function sendVerificationEmail(b: Booking, link: string) {
+  const first = b.contact.name.split(" ")[0];
+  const until = new Intl.DateTimeFormat("de-DE", { timeZone: availabilityConfig.timezone, hour: "2-digit", minute: "2-digit" }).format(
+    new Date(b.verification!.expiresAt),
+  );
+  let html = `<h1 style="font-size:22px;margin:12px 0 8px">Bitte bestätigen Sie Ihren Termin, ${esc(first)}</h1>
+<p style="font-size:15px;line-height:1.6;color:#3B4A43;margin:0">Nur noch ein Klick: Bestätigen Sie Ihre E-Mail-Adresse, damit wir Ihren Termin verbindlich eintragen können. Wir halten ihn bis <b>${until} Uhr</b> für Sie frei.</p>
+${button(link, "Termin jetzt bestätigen")}
+${table(detailRows(b, "de"), "ltr")}
+<p style="font-size:13px;line-height:1.6;color:#6B7A73">Falls der Button nicht funktioniert, kopieren Sie diesen Link in Ihren Browser:<br><a href="${esc(link)}" style="color:#1F7049;word-break:break-all">${esc(link)}</a></p>
+<p style="font-size:13px;line-height:1.6;color:#6B7A73">Sie haben nichts gebucht? Dann ignorieren Sie diese E-Mail einfach – die Reservierung verfällt automatisch.</p>`;
+  let subject = `Bitte bestätigen: Ihr Termin am ${new Intl.DateTimeFormat("de-DE", { timeZone: availabilityConfig.timezone, day: "2-digit", month: "2-digit" }).format(new Date(b.start))}`;
+  if (b.locale === "fa") {
+    html += `<div dir="rtl" style="text-align:right;border-top:1px solid #E4EAE6;margin-top:24px;padding-top:18px;font-family:Vazirmatn,Tahoma,sans-serif">
+<h2 style="font-size:19px;margin:0 0 8px">لطفاً قرار خود را تأیید کنید</h2>
+<p style="font-size:15px;line-height:1.9;color:#3B4A43;margin:0">فقط یک کلیک مانده است: با تأیید ایمیل، قرار شما قطعی ثبت می‌شود. این زمان تا ساعت ${until} برای شما نگه داشته می‌شود.</p>
+${button(link, "تأیید قرار")}</div>`;
+    subject += " · تأیید قرار";
+  }
+  const textBody = `Bitte bestätigen Sie Ihren Termin:\n${link}\n\n${detailRows(b, "de").map(([k, v]) => `${k}: ${v}`).join("\n")}\n\nReserviert bis ${until} Uhr.`;
+  await send(b.contact.email, subject, layout(html), textBody);
+}
+
 export async function sendBookingConfirmation(b: Booking, invoice: Invoice, invoicePdf: Uint8Array, agbPdf: Uint8Array) {
   const first = b.contact.name.split(" ")[0];
   let html = `<h1 style="font-size:22px;margin:12px 0 8px">Vielen Dank, ${esc(first)}!</h1>

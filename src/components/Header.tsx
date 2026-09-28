@@ -43,10 +43,8 @@ export function Header({ locale, t, minimal = false }: { locale: Locale; t: Dict
             ))}
           </nav>
         )}
-        <div className="flex items-center gap-3">
-          <div className="hidden sm:block">
-            <LanguageSwitcher locale={locale} label={t.switchLabel} />
-          </div>
+        <div className="flex items-center gap-2 sm:gap-3">
+          <LanguageSwitcher locale={locale} label={t.switchLabel} />
           {!minimal && (
             <Link href={`/${locale}/termin`} className="btn-primary hidden !px-5 !py-2.5 md:inline-flex">
               {t.book}
@@ -56,7 +54,7 @@ export function Header({ locale, t, minimal = false }: { locale: Locale; t: Dict
           {!minimal && (
             <button
               type="button"
-              className="grid h-11 w-11 place-items-center rounded-full border border-line bg-white shadow-soft lg:hidden"
+              className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-line bg-white shadow-soft sm:h-11 sm:w-11 lg:hidden"
               aria-label={open ? t.close : t.menu}
               aria-expanded={open}
               onClick={() => setOpen((o) => !o)}
@@ -64,11 +62,7 @@ export function Header({ locale, t, minimal = false }: { locale: Locale; t: Dict
               {open ? <IconClose /> : <IconMenu />}
             </button>
           )}
-          {minimal && (
-            <div className="sm:hidden">
-              <LanguageSwitcher locale={locale} label={t.switchLabel} />
-            </div>
-          )}
+
         </div>
       </div>
       {open && !minimal && (
@@ -79,8 +73,7 @@ export function Header({ locale, t, minimal = false }: { locale: Locale; t: Dict
                 {l.label}
               </Link>
             ))}
-            <div className="mt-3 flex items-center justify-between gap-3">
-              <LanguageSwitcher locale={locale} label={t.switchLabel} />
+            <div className="mt-3 flex items-center justify-end gap-3">
               <Link href={`/${locale}/termin`} className="btn-primary !py-2.5" onClick={() => setOpen(false)}>
                 {t.book}
               </Link>

@@ -23,11 +23,18 @@ export function bookingToBusy(b: Pick<Booking, "start" | "end" | "service">): Ti
   return { start: new Date(new Date(b.start).getTime() - buffer), end: new Date(new Date(b.end).getTime() + buffer) };
 }
 
+/** Blockiert eine Buchung den Kalender? Unbestätigte Reservierungen nur bis zum Ablauf der Haltefrist. */
+export function blocksCalendar(b: Booking, now = new Date()) {
+  if (b.status === "cancelled") return false;
+  if (b.status === "pending") return !!b.verification && new Date(b.verification.expiresAt) > now;
+  return true;
+}
+
 class LocalCalendarProvider implements CalendarProvider {
   id = "local" as const;
   async getBusy(from: Date, to: Date) {
     const bookings = await getStore().listBookings({ from, to });
-    return bookings.map(bookingToBusy);
+    return bookings.filter((b) => blocksCalendar(b)).map(bookingToBusy);
   }
   async createEvent(): Promise<CalendarLink> {
     return { provider: "local", syncStatus: "not_synced" };

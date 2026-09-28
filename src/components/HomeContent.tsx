@@ -5,6 +5,8 @@ import { Footer } from "@/components/Footer";
 import { HeroVisual } from "@/components/HeroVisual";
 import { Reveal } from "@/components/Reveal";
 import { ArchArtwork } from "@/components/ArchArtwork";
+import { cultureScenes, type CultureKey } from "@/components/CultureScenes";
+import { Tilt3D } from "@/components/Tilt3D";
 import {
   IconArrow,
   IconBridge,
@@ -89,6 +91,7 @@ export function HomeContent({ locale, t }: { locale: Locale; t: Dictionary }) {
                 { key: "onsite", icon: IconPin, data: t.services.onsite },
               ] as const).map(({ key, icon: Icon, data }, i) => (
                 <Reveal key={key} delay={i * 120}>
+                  <Tilt3D className="h-full" max={6}>
                   <article className="card card-hover group relative h-full overflow-hidden p-8 sm:p-10">
                     <div className="bg-girih pointer-events-none absolute -end-24 -top-24 h-64 w-64 rounded-full opacity-0 transition-opacity duration-700 group-hover:opacity-100" aria-hidden="true" />
                     <div className="relative grid h-14 w-14 place-items-center rounded-2xl bg-brand-50 text-brand-700 shadow-[inset_0_0_0_1px_rgba(44,138,93,.12)] transition-all duration-500 group-hover:-rotate-6 group-hover:bg-brand-600 group-hover:text-white">
@@ -108,6 +111,7 @@ export function HomeContent({ locale, t }: { locale: Locale; t: Dictionary }) {
                       {t.nav.book} <IconArrow size={18} />
                     </Link>
                   </article>
+                  </Tilt3D>
                 </Reveal>
               ))}
             </div>
@@ -138,15 +142,57 @@ export function HomeContent({ locale, t }: { locale: Locale; t: Dictionary }) {
                 const Icon = categoryIcons[item.key as AppointmentCategory];
                 return (
                   <Reveal key={item.key} delay={(i % 3) * 90}>
-                    <div className="card card-hover group flex h-full items-start gap-5 p-6">
+                    <Link
+                      href={`/${locale}/termin?leistung=onsite&anlass=${item.key}`}
+                      className="card card-hover group flex h-full items-start gap-5 p-6 focus-visible:ring-4"
+                    >
                       <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xl border border-brand-100 bg-white text-brand-700 shadow-soft transition duration-500 group-hover:scale-110 group-hover:border-brand-200">
                         <Icon size={24} />
                       </div>
                       <div>
                         <h3 className="text-lg font-bold">{item.title}</h3>
                         <p className="mt-1.5 text-[15px] leading-relaxed text-ink-muted">{item.text}</p>
+                        <span className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-brand-700 opacity-80 transition-all group-hover:gap-2.5 group-hover:opacity-100">
+                          {t.nav.book} <IconArrow size={15} />
+                        </span>
                       </div>
-                    </div>
+                    </Link>
+                  </Reveal>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
+        {/* ---------- Zwei Kulturen ---------- */}
+        <section className="relative overflow-hidden py-20 lg:py-28">
+          <div className="container-page">
+            <Reveal className="mx-auto max-w-2xl text-center">
+              <div className="eyebrow">{t.culture.eyebrow}</div>
+              <h2 className="mt-4 text-3xl font-bold leading-tight sm:text-[2.6rem]">{t.culture.title}</h2>
+              <p className="mt-4 text-[17px] leading-relaxed text-ink-soft">{t.culture.text}</p>
+            </Reveal>
+            <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+              {t.culture.items.map((item, i) => {
+                const Scene = cultureScenes[item.key as CultureKey];
+                return (
+                  <Reveal key={item.key} delay={i * 110}>
+                    <Tilt3D className="h-full">
+                      <figure className="flex h-full flex-col rounded-[1.75rem] border border-line bg-white p-3 shadow-lift">
+                        <div className="preserve-3d relative aspect-[4/3] w-full">
+                          <Scene />
+                        </div>
+                        <figcaption className="px-3 pb-3 pt-5" style={{ transform: "translateZ(30px)" }}>
+                          <div className="flex items-baseline justify-between gap-3">
+                            <span className="text-lg font-bold text-ink">{item.title}</span>
+                            <span className={`text-sm text-brand-600 ${locale === "de" ? "font-fa" : ""}`} lang={locale === "de" ? "fa" : "de"}>
+                              {item.alt}
+                            </span>
+                          </div>
+                          <p className="mt-1.5 text-[15px] leading-relaxed text-ink-muted">{item.text}</p>
+                        </figcaption>
+                      </figure>
+                    </Tilt3D>
                   </Reveal>
                 );
               })}

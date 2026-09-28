@@ -14,3 +14,17 @@ describe("detectCategory", () => {
   it("erkennt Klinik", () => expect(detectCategory("Klinikum Nürnberg Nord")).toBe("medical"));
   it("erkennt Jobcenter", () => expect(detectCategory("Jobcenter Nürnberg-Stadt")).toBe("authority"));
 });
+
+import { parseFreeAddress } from "./address";
+
+describe("parseFreeAddress", () => {
+  it("erkennt Tippfehler-Adresse", () =>
+    expect(parseFreeAddress("Luisenstraß 3 90762 Fürth")).toEqual({ street: "Luisenstraße", houseNumber: "3", postalCode: "90762", city: "Fürth" }));
+  it("Abkürzung und Komma", () =>
+    expect(parseFreeAddress("Hauptstr. 12a, 90402 nürnberg")).toEqual({ street: "Hauptstraße", houseNumber: "12a", postalCode: "90402", city: "Nürnberg" }));
+  it("PLZ zuerst", () =>
+    expect(parseFreeAddress("90402 Nürnberg, Königstraße 5")).toEqual({ street: "Königstraße", houseNumber: "5", postalCode: "90402", city: "Nürnberg" }));
+  it("mehrteilige Straße", () =>
+    expect(parseFreeAddress("Am Plärrer 7 90443 Nürnberg")).toEqual({ street: "Am Plärrer", houseNumber: "7", postalCode: "90443", city: "Nürnberg" }));
+  it("ohne PLZ unvollständig", () => expect(parseFreeAddress("Luisenstraße 3")?.postalCode).toBe(""));
+});

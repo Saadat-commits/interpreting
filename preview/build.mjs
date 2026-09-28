@@ -30,6 +30,9 @@ const js = await build({
   define: {
     "process.env.NODE_ENV": '"production"',
     "process.env.NEXT_PUBLIC_CRISP_WEBSITE_ID": '""',
+    "process.env.NEXT_PUBLIC_DEMO": '"1"',
+    "process.env.NEXT_PUBLIC_AGB_URL": '"agb.pdf"',
+    "process.env.NEXT_PUBLIC_ADDRESS_HINT": '""',
   },
 });
 
@@ -37,6 +40,19 @@ execSync(
   `npx tailwindcss -c tailwind.config.ts -i src/app/globals.css --content "./src/**/*.{ts,tsx},./preview/**/*.{ts,tsx}" -o preview/dist/app.css --minify`,
   { cwd: root, stdio: "inherit" },
 );
+// Beispiel-PDFs (Rechnung + AGB) mit erfundenen Daten
+await build({
+  entryPoints: [path.join(here, "sample-pdfs.ts")],
+  bundle: true,
+  platform: "node",
+  format: "esm",
+  packages: "external",
+  outfile: path.join(dist, "sample-pdfs.mjs"),
+  alias: { "@": path.join(root, "src") },
+  logLevel: "warning",
+});
+execSync(`node ${path.join(dist, "sample-pdfs.mjs")} ${dist}`, { cwd: root, stdio: "inherit" });
+
 const css = readFileSync(path.join(dist, "app.css"), "utf8");
 
 const html = `<title>Interpreting NBG Vorschau</title>
