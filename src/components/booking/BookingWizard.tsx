@@ -16,7 +16,7 @@ import { MountainScene } from "./MountainScene";
 import { StructuredAddress } from "./StructuredAddress";
 
 type T = Dictionary;
-type StepId = "who" | "how" | "lang" | "when" | "where" | "details" | "billing" | "review";
+type StepId = "start" | "how" | "when" | "where" | "details" | "review";
 type How = "onsite" | "phone" | "instant";
 
 const STORAGE_KEY = "inbg.booking.v3";
@@ -50,8 +50,9 @@ function writeRemembered(r: Remembered) {
 
 /**
  * Buchung Schritt für Schritt – eine Frage pro Bildschirm:
- *   Wer? → Wie? → Sprache → Wann? → Wo? → Daten → (Rechnung) → Prüfen
- * Privatpersonen werden nicht nach „Für wen?“ gefragt; Einrichtungen geben Sachbearbeiter:in und Klient:in an.
+ *   Wer + Sprache → Wie? → Wann? → Wo? → Daten (+ Rechnungsadresse falls nötig) → Prüfen
+ * Jede Angabe wird genau einmal abgefragt: Namen, Telefon und E-Mail werden für Rückruf,
+ * Rechnung und Bestätigung wiederverwendet. Privatpersonen werden nicht nach „Für wen?“ gefragt.
  */
 export function BookingWizard({
   locale,
@@ -75,7 +76,6 @@ export function BookingWizard({
   const [place, setPlace] = useState<PostalAddress | null>(null);
   const [billingSame, setBillingSame] = useState(true);
   const [billing, setBilling] = useState<PostalAddress | null>(null);
-  const [billingRecipient, setBillingRecipient] = useState("");
 
   const [first, setFirst] = useState("");
   const [last, setLast] = useState("");
@@ -111,17 +111,17 @@ export function BookingWizard({
 
   const service: ServiceType | null = how === "onsite" ? "onsite" : how ? "phone" : null;
   const instant = how === "instant";
-  const needsBillingStep = how !== null && (how !== "onsite" || !billingSame);
+  // Rechnungsadresse nur, wenn sie nicht schon die Terminadresse ist
+  const needsBilling = how !== null && (how !== "onsite" || !billingSame);
+  const billingRecipient = who === "organisation" ? orgName.trim() : `${first.trim()} ${last.trim()}`.trim();
 
   const steps: StepId[] = useMemo(() => {
-    const s: StepId[] = ["who", "how", "lang"];
+    const s: StepId[] = ["start", "how"];
     if (!instant) s.push("when");
     if (how === "onsite") s.push("where");
-    s.push("details");
-    if (needsBillingStep) s.push("billing");
-    s.push("review");
+    s.push("details", "review");
     return s;
-  }, [instant, how, needsBillingStep]);
+  }, [instant, how]);
 
   const step = steps[Math.min(stepIndex, steps.length - 1)];
 
@@ -134,13 +134,12 @@ export function BookingWizard({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [service]);
 
-  // Rechnungsempfänger sinnvoll vorbelegen
-  useEffect(() => {
-    if (billingRecipient) return;
-    const fallback = who === "organisation" ? orgName : `${first} ${last}`.trim();
-    if (fallback && step === "billing") setBillingRecipient(fallback);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step]);
+  // Erster Schritt: sobald „Wer“ und „Sprache“ gewählt sind, geht es automatisch weiter
+  const pickStart = (w: typeof who, l: typeof language) => {
+    if (w) setWho(w);
+    if (l) setLanguage(l);
+    if ((w ?? who) && (l ?? language)) autoNext();
+  };
 
   useEffect(() => {
     topRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -175,17 +174,16 @@ export function BookingWizard({
       if (clientFirst.trim().length < 2) e.clientFirst = t.booking.errors.name;
       if (clientLast.trim().length < 2) e.clientLast = t.booking.errors.name;
     }
+    if (needsBilling && !billing) e.billing = t.booking.errors.generic;
     return e;
-  }, [first, last, email, phone, who, orgName, clientFirst, clientLast, t]);
+  }, [first, last, email, phone, who, orgName, clientFirst, clientLast, needsBilling, billing, t]);
 
   const valid: Record<StepId, boolean> = {
-    who: !!who,
+    start: !!who && !!language,
     how: !!how,
-    lang: !!language,
     when: !!start,
     where: !!place,
     details: Object.keys(errors).length === 0,
-    billing: !!billing && billingRecipient.trim().length > 1,
     review: true,
   };
   const err = (k: string) => (touched[k] ? errors[k] : undefined);
@@ -214,8 +212,8 @@ export function BookingWizard({
       phoneSession: onsite ? undefined : { callNumber: phone.trim(), mode: instant ? "instant" : "scheduled" },
       contact: { name: contactName, organisation: who === "organisation" ? orgName.trim() : undefined, email: email.trim(), phone: phone.trim() },
       billingSameAsAppointment: onsite && billingSame,
-      billingAddress: needsBillingStep ? billing : undefined,
-      billingRecipient: needsBillingStep ? billingRecipient.trim() : who === "organisation" ? orgName.trim() : undefined,
+      billingAddress: needsBilling ? billing : undefined,
+      billingRecipient: billingRecipient || undefined,
       notes: notes.trim() || undefined,
       acceptTerms: true,
       website: honeypot,
@@ -231,7 +229,7 @@ export function BookingWizard({
       }
       if (!res.ok) throw new Error(String(res.status));
       setPending(await res.json());
-      writeRemembered({ who, first, last, email, phone, orgName, language, billingAddress: needsBillingStep ? billing : place });
+      writeRemembered({ who, first, last, email, phone, orgName, language, billingAddress: needsBilling ? billing : place });
     } catch {
       setSubmitError(t.booking.errors.generic);
     } finally {
@@ -246,9 +244,9 @@ export function BookingWizard({
 
   /* ---------------- Zusammenfassung (live) ---------------- */
   const summary: { icon: ReactNode; label: string; value: string; step: StepId }[] = [];
-  if (who) summary.push({ icon: who === "private" ? <IconUser size={16} /> : <IconBuilding size={16} />, label: f.sumWho, value: who === "private" ? f.whoPrivate : orgName || f.whoOrg, step: "who" });
+  if (who) summary.push({ icon: who === "private" ? <IconUser size={16} /> : <IconBuilding size={16} />, label: f.sumWho, value: who === "private" ? f.whoPrivate : orgName || f.whoOrg, step: "start" });
   if (how) summary.push({ icon: how === "onsite" ? <IconPin size={16} /> : <IconPhone size={16} />, label: f.sumHow, value: f[`how_${how}`], step: "how" });
-  if (language) summary.push({ icon: <IconGlobe size={16} />, label: f.sumLang, value: t.languages[language], step: "lang" });
+  if (language) summary.push({ icon: <IconGlobe size={16} />, label: f.sumLang, value: t.languages[language], step: "start" });
   if (start && !instant) summary.push({ icon: <IconCalendar size={16} />, label: f.sumWhen, value: formatWhen(locale, start, endOf(start)), step: "when" });
   if (place) summary.push({ icon: <IconPin size={16} />, label: f.sumWhere, value: [place.placeName, formatAddress(place)].filter(Boolean).join(", "), step: "where" });
 
@@ -269,13 +267,30 @@ export function BookingWizard({
         </div>
       </div>
 
-      <div key={step} className={direction === 1 ? "animate-step-in" : "animate-step-back"}>
-        {/* ---------- Wer? ---------- */}
-        {step === "who" && (
+      <div key={step} className={`relative z-20 ${direction === 1 ? "animate-step-in" : "animate-step-back"}`}>
+        {/* ---------- Wer + Sprache (ein Bildschirm) ---------- */}
+        {step === "start" && (
           <Question title={f.whoTitle} sub={f.whoSub}>
             <div className="grid gap-3 sm:grid-cols-2">
-              <Choice active={who === "private"} icon={<IconUser size={24} />} title={f.whoPrivate} text={f.whoPrivateText} onClick={() => (setWho("private"), autoNext())} />
-              <Choice active={who === "organisation"} icon={<IconBuilding size={24} />} title={f.whoOrg} text={f.whoOrgText} onClick={() => (setWho("organisation"), autoNext())} />
+              <Choice active={who === "private"} icon={<IconUser size={24} />} title={f.whoPrivate} text={f.whoPrivateText} onClick={() => pickStart("private", null)} />
+              <Choice active={who === "organisation"} icon={<IconBuilding size={24} />} title={f.whoOrg} text={f.whoOrgText} onClick={() => pickStart("organisation", null)} />
+            </div>
+            <div className={`mt-7 transition-opacity duration-300 ${who ? "opacity-100" : "opacity-60"}`}>
+              <div className="mb-3 text-[17px] font-bold text-ink">{f.langTitle}</div>
+              <div className="grid grid-cols-3 gap-2.5">
+                {(["dari", "farsi", "pashto"] as const).map((l) => (
+                  <button
+                    key={l}
+                    type="button"
+                    onClick={() => pickStart(null, l)}
+                    aria-pressed={language === l}
+                    className={`flex flex-col items-center gap-0.5 rounded-2xl border-2 px-2 py-3.5 transition ${language === l ? "border-brand-600 bg-brand-50/60 shadow-soft" : "border-line bg-white hover:border-brand-200"}`}
+                  >
+                    <span className="font-fa text-lg font-bold text-brand-700">{t.languagesNative[l]}</span>
+                    <span className="text-[13px] font-semibold text-ink-soft">{t.languages[l]}</span>
+                  </button>
+                ))}
+              </div>
             </div>
           </Question>
         )}
@@ -287,17 +302,6 @@ export function BookingWizard({
               <Choice active={how === "onsite"} icon={<IconPin size={24} />} title={f.how_onsite} text={f.how_onsiteText} onClick={() => (setHow("onsite"), autoNext())} />
               <Choice active={how === "phone"} icon={<IconCalendar size={24} />} title={f.how_phone} text={f.how_phoneText} onClick={() => (setHow("phone"), autoNext())} />
               <Choice active={how === "instant"} icon={<IconPhone size={24} />} title={f.how_instant} text={f.how_instantText} onClick={() => (setHow("instant"), autoNext())} badge={f.instantBadge} />
-            </div>
-          </Question>
-        )}
-
-        {/* ---------- Sprache ---------- */}
-        {step === "lang" && (
-          <Question title={f.langTitle}>
-            <div className="grid gap-3 sm:grid-cols-3">
-              {(["dari", "farsi", "pashto"] as const).map((l) => (
-                <Choice key={l} compact active={language === l} icon={<span className="font-fa text-lg font-bold">{t.languagesNative[l]}</span>} title={t.languages[l]} onClick={() => (setLanguage(l), autoNext())} />
-              ))}
             </div>
           </Question>
         )}
@@ -399,19 +403,14 @@ export function BookingWizard({
                 </>
               )}
             </div>
+            {needsBilling && (
+              <div className="mt-7 border-t border-line pt-6">
+                <div className="text-[17px] font-bold text-ink">{who === "organisation" ? f.billingOrgTitle : f.billingTitle}</div>
+                <p className="mb-4 mt-1 text-[14px] text-ink-muted">{fillName(f.billingSub, billingRecipient)}</p>
+                <StructuredAddress value={billing} onChange={setBilling} t={f.address} locale={locale} />
+              </div>
+            )}
             <input tabIndex={-1} autoComplete="off" className="hidden" value={honeypot} onChange={(e) => setHoneypot(e.target.value)} aria-hidden="true" />
-          </Question>
-        )}
-
-        {/* ---------- Rechnung ---------- */}
-        {step === "billing" && (
-          <Question title={f.billingTitle} sub={f.billingSub}>
-            <Field label={f.billingRecipient}>
-              <input className="field !py-3.5 !text-base" value={billingRecipient} onChange={(e) => setBillingRecipient(e.target.value)} placeholder={who === "organisation" ? f.orgNamePh : `${first} ${last}`} />
-            </Field>
-            <div className="mt-4">
-              <StructuredAddress value={billing} onChange={setBilling} t={f.address} locale={locale} />
-            </div>
           </Question>
         )}
 
@@ -434,8 +433,8 @@ export function BookingWizard({
               <ReviewRow
                 icon={<IconCheck size={16} />}
                 label={f.sumBilling}
-                value={needsBillingStep && billing ? `${billingRecipient}, ${formatAddress(billing)}` : f.sameAsPlace}
-                onEdit={() => jumpTo(needsBillingStep ? "billing" : "where")}
+                value={needsBilling && billing ? `${billingRecipient}, ${formatAddress(billing)}` : `${billingRecipient} · ${f.sameAsPlace}`}
+                onEdit={() => jumpTo(needsBilling ? "details" : "where")}
                 edit={t.common.edit}
               />
             </dl>
@@ -467,7 +466,7 @@ export function BookingWizard({
       </div>
 
       {/* Aktion */}
-      {!["who", "how", "lang"].includes(step) && (
+      {!["start", "how"].includes(step) && (
         <div className="mt-8 border-t border-line pt-6">
           {step === "review" ? (
             <button type="button" className="btn-primary w-full !py-4 !text-base" onClick={submit} disabled={submitting}>
@@ -542,6 +541,8 @@ export function BookingWizard({
 }
 
 /* ================= Bausteine ================= */
+
+const fillName = (s: string, name: string) => s.replace("{name}", name || "—");
 
 function Question({ title, sub, children }: { title: string; sub?: string; children: ReactNode }) {
   return (

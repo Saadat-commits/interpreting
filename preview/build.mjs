@@ -55,7 +55,8 @@ execSync(`node ${path.join(dist, "sample-pdfs.mjs")} ${dist}`, { cwd: root, stdi
 
 const css = readFileSync(path.join(dist, "app.css"), "utf8");
 
-const html = `<title>Interpreting NBG Vorschau</title>
+const html = `<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Interpreting NBG Vorschau</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Vazirmatn:wght@400;500;600;700&display=swap">

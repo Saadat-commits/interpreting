@@ -5,8 +5,9 @@
 import { computeMonth } from "@/lib/availability";
 import { MOCK_ADDRESSES } from "@/lib/server/places";
 import type { PostalAddress, TimeInterval } from "@/lib/types";
-import { zonedToUtc } from "@/lib/time";
 import { citiesForPostalCode } from "@/lib/postal";
+import { CALENDAR_BUSY } from "./calendar-snapshot";
+import { DEMO_STREETS, rankStreets } from "@/lib/streets";
 
 const extra: PostalAddress[] = [
   { label: "Königstorgraben 11, 90402 Nürnberg", street: "Königstorgraben", houseNumber: "11", postalCode: "90402", city: "Nürnberg", country: "DE", placeName: "Kinderarztpraxis am Königstor", source: "mock" },
@@ -15,21 +16,9 @@ const extra: PostalAddress[] = [
 ];
 const addresses = [...MOCK_ADDRESSES, ...extra];
 
-// Einige Beispiel-Belegungen, damit rote (belegte) Zeiten sichtbar sind
-function demoBusy(year: number, month: number): TimeInterval[] {
-  const out: TimeInterval[] = [];
-  for (let d = 1; d <= 31; d += 1) {
-    if (d % 3 === 0) {
-      const key = `${year}-${String(month).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
-      const start = zonedToUtc(key, d % 2 ? "09:00" : "13:30", "Europe/Berlin");
-      out.push({ start, end: new Date(start.getTime() + 150 * 60000) });
-    }
-    if (d % 7 === 4) {
-      const key = `${year}-${String(month).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
-      out.push({ start: zonedToUtc(key, "07:00", "Europe/Berlin"), end: zonedToUtc(key, "19:00", "Europe/Berlin") });
-    }
-  }
-  return out;
+// Belegte Zeiten = echter Google Kalender (Momentaufnahme)
+function demoBusy(): TimeInterval[] {
+  return CALENDAR_BUSY;
 }
 
 const json = (data: unknown, status = 200) =>
@@ -49,7 +38,7 @@ export function installMockApi() {
       await wait(250);
       const service = url.searchParams.get("service") as "phone" | "onsite";
       const [y, m] = (url.searchParams.get("month") ?? "").split("-").map(Number);
-      const days = computeMonth({ service, durationMinutes: Number(url.searchParams.get("duration")), year: y, month: m, busy: demoBusy(y, m) });
+      const days = computeMonth({ service, durationMinutes: Number(url.searchParams.get("duration")), year: y, month: m, busy: demoBusy() });
       return json({ days });
     }
     if (path === "/api/places") {
@@ -91,6 +80,12 @@ export function installMockApi() {
     if (path === "/api/plz") {
       await wait(120);
       return json({ cities: citiesForPostalCode(url.searchParams.get("code") ?? "") });
+    }
+    if (path === "/api/streets") {
+      await wait(90);
+      const plz = url.searchParams.get("plz") ?? "";
+      const all = [...(DEMO_STREETS[plz] ?? []), ...addresses.filter((a) => a.postalCode === plz).map((a) => a.street)];
+      return json({ streets: rankStreets(all, url.searchParams.get("q") ?? "", 6) });
     }
     if (path === "/api/chat") {
       await wait(500);
