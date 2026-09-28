@@ -160,7 +160,7 @@ class GooglePlacesProvider implements PlacesProvider {
 
 /* ---------------- Demo-Daten (Entwicklung ohne Internet) ---------------- */
 
-const MOCK: PostalAddress[] = [
+export const MOCK_ADDRESSES: PostalAddress[] = [
   { label: "Dietzstraße 4, 90443 Nürnberg", street: "Dietzstraße", houseNumber: "4", postalCode: "90443", city: "Nürnberg", country: "DE", placeName: "Jugendamt Nürnberg", source: "mock" },
   { label: "Prof.-Ernst-Nathan-Straße 1, 90419 Nürnberg", street: "Prof.-Ernst-Nathan-Straße", houseNumber: "1", postalCode: "90419", city: "Nürnberg", country: "DE", placeName: "Klinikum Nürnberg Nord", source: "mock" },
   { label: "Hauptmarkt 18, 90403 Nürnberg", street: "Hauptmarkt", houseNumber: "18", postalCode: "90403", city: "Nürnberg", country: "DE", placeName: "Rathaus Nürnberg", source: "mock" },
@@ -171,10 +171,10 @@ const MOCK: PostalAddress[] = [
   { label: "Hauptstraße, 90547 Stein", street: "Hauptstraße", houseNumber: "", postalCode: "90547", city: "Stein", country: "DE", source: "mock" },
 ];
 
-class MockProvider implements PlacesProvider {
+export class MockProvider implements PlacesProvider {
   async suggest(query: string) {
     const q = query.toLowerCase();
-    return MOCK.filter((a) => `${a.placeName ?? ""} ${a.label}`.toLowerCase().includes(q) || q.split(/\s+/).every((w) => `${a.placeName ?? ""} ${a.label}`.toLowerCase().includes(w)))
+    return MOCK_ADDRESSES.filter((a) => `${a.placeName ?? ""} ${a.label}`.toLowerCase().includes(q) || q.split(/\s+/).every((w) => `${a.placeName ?? ""} ${a.label}`.toLowerCase().includes(w)))
       .slice(0, 6)
       .map((a, i) => ({
         id: `mock-${i}-${a.label}`,
