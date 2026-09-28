@@ -1,4 +1,4 @@
-import { createSign } from "node:crypto";
+import { googleAccessToken, SCOPES } from "../google-auth";
 import { availabilityConfig } from "@/config/availability";
 import { de } from "@/lib/i18n/de";
 import { formatAddress } from "@/lib/address";
@@ -11,52 +11,22 @@ import type { CalendarProvider } from "./index";
  *  - getBusy():     liest belegte Zeiten (auch private Termine) → diese Zeiten sind auf der Website nicht buchbar
  *  - createEvent(): trägt jede bestätigte Buchung mit allen Details in den Kalender ein
  *
- * Einrichtung (einmalig): Dienstkonto in der Google Cloud Console anlegen, Kalender-API aktivieren,
- * den Kalender (z. B. saadat@interpreting-nbg.de) mit der Dienstkonto-Adresse teilen
- * („Änderungen an Terminen vornehmen“) und die Umgebungsvariablen setzen:
- *   GOOGLE_CALENDAR_ID, GOOGLE_SERVICE_ACCOUNT_EMAIL, GOOGLE_SERVICE_ACCOUNT_KEY
+ * Anmeldung über das gemeinsame Google-Dienstkonto (siehe google-auth.ts).
  */
 export class GoogleCalendarProvider implements CalendarProvider {
   id = "google" as const;
-  private token: { value: string; exp: number } | null = null;
 
-  private constructor(
-    private calendarId: string,
-    private clientEmail: string,
-    private privateKey: string,
-  ) {}
+  private constructor(private calendarId: string) {}
 
   static fromEnv(): GoogleCalendarProvider | null {
-    const id = process.env.GOOGLE_CALENDAR_ID;
-    const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
-    const key = process.env.GOOGLE_SERVICE_ACCOUNT_KEY;
-    if (!id || !email || !key || process.env.GOOGLE_CALENDAR_ENABLED === "false") return null;
-    // In Umgebungsvariablen werden Zeilenumbrüche oft als „\n“ gespeichert
-    return new GoogleCalendarProvider(id, email, key.replace(/\\n/g, "\n"));
+    const id = process.env.GOOGLE_CALENDAR_ID || process.env.GOOGLE_DELEGATED_USER;
+    const configured = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL && process.env.GOOGLE_SERVICE_ACCOUNT_KEY;
+    if (!id || !configured || process.env.GOOGLE_CALENDAR_ENABLED === "false") return null;
+    return new GoogleCalendarProvider(id);
   }
 
-  private async accessToken() {
-    const now = Math.floor(Date.now() / 1000);
-    if (this.token && this.token.exp - 60 > now) return this.token.value;
-    const b64 = (o: object) => Buffer.from(JSON.stringify(o)).toString("base64url");
-    const unsigned = `${b64({ alg: "RS256", typ: "JWT" })}.${b64({
-      iss: this.clientEmail,
-      scope: "https://www.googleapis.com/auth/calendar",
-      aud: "https://oauth2.googleapis.com/token",
-      iat: now,
-      exp: now + 3600,
-    })}`;
-    const signature = createSign("RSA-SHA256").update(unsigned).sign(this.privateKey).toString("base64url");
-    const res = await fetch("https://oauth2.googleapis.com/token", {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({ grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer", assertion: `${unsigned}.${signature}` }),
-      signal: AbortSignal.timeout(8000),
-    });
-    if (!res.ok) throw new Error(`Google-Anmeldung fehlgeschlagen (${res.status}): ${await res.text()}`);
-    const data = (await res.json()) as { access_token: string; expires_in: number };
-    this.token = { value: data.access_token, exp: now + data.expires_in };
-    return data.access_token;
+  private accessToken() {
+    return googleAccessToken(SCOPES.calendar);
   }
 
   private async api<T>(path: string, body: unknown): Promise<T> {

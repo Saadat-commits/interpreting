@@ -50,24 +50,23 @@ Die Domain liegt bei Squarespace (ehemals Google Domains), E-Mail läuft über G
    - Google-Workspace-Einträge (MX, TXT) **unverändert lassen**.
 5. Nach einigen Minuten bis Stunden ist die Seite unter der Domain erreichbar (HTTPS richtet Vercel automatisch ein).
 
-## Google: E-Mails und Kalender automatisch
+## Google: ein Zugang für E-Mails, Rechnungen und Kalender
 
-**E-Mails (Bestätigung + Rechnung) über Ihr Google-Workspace-Postfach**
-1. myaccount.google.com → *Sicherheit* → Bestätigung in zwei Schritten aktivieren.
-2. *App-Passwörter* → neues Passwort „Website“ erstellen.
-3. Bei Vercel eintragen: `SMTP_HOST=smtp.gmail.com`, `SMTP_PORT=465`, `SMTP_SECURE=true`,
-   `SMTP_USER=saadat@interpreting-nbg.de`, `SMTP_PASS=<App-Passwort>`, `OWNER_EMAIL=saadat@interpreting-nbg.de`.
+Die Website nutzt **ein Google-Dienstkonto** und handelt damit im Namen von `saadat@interpreting-nbg.de`:
+Bestätigungsmails mit Rechnung + AGB gehen über Gmail raus, freie Zeiten werden mit dem Kalender abgeglichen
+und jede bestätigte Buchung wird eingetragen. Kein App-Passwort, keine Kalender-Freigabe nötig.
 
-**Google Kalender (belegte Zeiten sperren + Buchungen automatisch eintragen)**
-1. console.cloud.google.com → neues Projekt → *Google Calendar API* aktivieren.
-2. *IAM & Verwaltung → Dienstkonten* → Dienstkonto anlegen → *Schlüssel → JSON* herunterladen.
-3. In Google Kalender: *Einstellungen → saadat@interpreting-nbg.de → Für bestimmte Personen freigeben* →
-   Adresse des Dienstkontos hinzufügen, Berechtigung „Änderungen an Terminen vornehmen“.
-4. Bei Vercel eintragen: `GOOGLE_CALENDAR_ID=saadat@interpreting-nbg.de`,
-   `GOOGLE_SERVICE_ACCOUNT_EMAIL=<client_email aus der JSON-Datei>`, `GOOGLE_SERVICE_ACCOUNT_KEY=<private_key aus der JSON-Datei>`.
+Einmalig einrichten (ca. 10 Minuten):
+1. console.cloud.google.com → Projekt anlegen → **Gmail API** und **Google Calendar API** aktivieren.
+2. *IAM & Verwaltung → Dienstkonten* → Dienstkonto „website“ anlegen → *Schlüssel → JSON* herunterladen.
+   Die **Client-ID** (Zahl) des Dienstkontos notieren.
+3. admin.google.com → *Sicherheit → Zugriffs- und Datenverwaltung → API-Steuerung → Domainweite Delegierung* →
+   *Neu hinzufügen*: Client-ID eintragen, Bereiche
+   `https://www.googleapis.com/auth/gmail.send,https://www.googleapis.com/auth/calendar`.
+4. Bei Vercel eintragen: `GOOGLE_SERVICE_ACCOUNT_EMAIL` (client_email), `GOOGLE_SERVICE_ACCOUNT_KEY` (private_key),
+   `GOOGLE_DELEGATED_USER=saadat@interpreting-nbg.de`.
 
-Danach gilt: Private Termine im Kalender sind auf der Website automatisch nicht buchbar, und jede bestätigte
-Buchung erscheint mit Adresse, Kontakt und Hinweisen im Kalender (grün markiert, mit Erinnerung).
+Ohne diese Werte fällt die Website automatisch auf SMTP (`SMTP_*`) bzw. nur lokale Termine zurück.
 
 ## Vor dem Livegang anpassen
 

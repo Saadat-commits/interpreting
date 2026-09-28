@@ -1,6 +1,7 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import nodemailer, { type Transporter } from "nodemailer";
+import { delegatedUser, gmailSendRaw, googleConfigured } from "./google-auth";
 import { site } from "@/config/site";
 import { availabilityConfig } from "@/config/availability";
 import { de } from "@/lib/i18n/de";
@@ -16,7 +17,12 @@ interface Attachment {
 
 let transporter: Transporter | null = null;
 
-function getTransport(): { t: Transporter; mode: "smtp" | "outbox" } {
+function getTransport(): { t: Transporter; mode: "smtp" | "outbox" | "gmail" } {
+  // Bevorzugt: Versand über Gmail-API mit dem Google-Dienstkonto (kein App-Passwort nötig)
+  if (googleConfigured() && delegatedUser()) {
+    transporter ??= nodemailer.createTransport({ streamTransport: true, buffer: true, newline: "windows" });
+    return { t: transporter, mode: "gmail" };
+  }
   if (process.env.SMTP_HOST) {
     transporter ??= nodemailer.createTransport({
       host: process.env.SMTP_HOST,
@@ -34,7 +40,7 @@ function getTransport(): { t: Transporter; mode: "smtp" | "outbox" } {
 async function send(to: string, subject: string, html: string, textBody: string, attachments: Attachment[] = [], replyTo?: string) {
   const { t, mode } = getTransport();
   const info = await t.sendMail({
-    from: process.env.MAIL_FROM || `${site.brand} <${site.email}>`,
+    from: process.env.MAIL_FROM || `${site.brand} <${delegatedUser() ?? site.email}>`,
     to,
     replyTo,
     subject,
@@ -42,6 +48,10 @@ async function send(to: string, subject: string, html: string, textBody: string,
     text: textBody,
     attachments,
   });
+  if (mode === "gmail") {
+    await gmailSendRaw((info as unknown as { message: Buffer }).message);
+    return;
+  }
   if (mode === "outbox") {
     const dir = path.join(process.env.DATA_DIR || "./data", "outbox");
     await fs.mkdir(dir, { recursive: true });
@@ -75,13 +85,13 @@ function detailRows(b: Booking, locale: "de" | "fa") {
 
 function layout(inner: string, dir: "ltr" | "rtl" = "ltr") {
   const font = dir === "rtl" ? "Vazirmatn, Tahoma, Arial, sans-serif" : "Manrope, Segoe UI, Helvetica, Arial, sans-serif";
-  return `<!doctype html><html dir="${dir}"><body style="margin:0;background:#F4F7F5;font-family:${font};color:#13201A">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F4F7F5;padding:32px 12px"><tr><td align="center">
+  return `<!doctype html><html dir="${dir}"><body style="margin:0;background:#FFFFFF;font-family:${font};color:#13201A">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#FFFFFF;padding:32px 12px"><tr><td align="center">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #E4EAE6">
 <tr><td style="height:6px;background:#1F7049"></td></tr>
 <tr><td style="padding:28px 32px 8px"><div style="font-weight:700;font-size:17px">${esc(site.brand)}</div><div style="font-size:12px;color:#6B7A73">${esc(site.brandTagline)}</div></td></tr>
 <tr><td style="padding:8px 32px 32px">${inner}</td></tr>
-<tr><td style="padding:18px 32px;background:#FBFCFB;border-top:1px solid #E4EAE6;font-size:12px;color:#6B7A73">
+<tr><td style="padding:18px 32px;background:#FFFFFF;border-top:1px solid #E4EAE6;font-size:12px;color:#6B7A73">
 ${esc(site.brand)} · ${esc(site.street)} · ${esc(site.postalCode)} ${esc(site.city)}<br>${esc(site.phone)} · ${esc(site.email)}</td></tr>
 </table></td></tr></table></body></html>`;
 }
@@ -163,7 +173,7 @@ ${table(detailRows(b, "fa"), "rtl")}</div>`;
 }
 
 export async function notifyOwnerOfBooking(b: Booking, invoice: Invoice, invoicePdf: Uint8Array) {
-  const to = process.env.OWNER_EMAIL || site.email;
+  const to = process.env.OWNER_EMAIL || delegatedUser() || site.email;
   const rows = [
     ...detailRows(b, "de"),
     ["Auftraggeber:in", [b.contact.name, b.contact.organisation].filter(Boolean).join(" · ")] as [string, string],
@@ -182,7 +192,7 @@ export async function notifyOwnerOfBooking(b: Booking, invoice: Invoice, invoice
 }
 
 export async function notifyOwnerOfChat(m: ChatMessage) {
-  const to = process.env.OWNER_EMAIL || site.email;
+  const to = process.env.OWNER_EMAIL || delegatedUser() || site.email;
   const rows: [string, string][] = [
     ["Name", m.name || "—"],
     ["Kontakt", m.contact || "—"],

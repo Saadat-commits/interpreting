@@ -42,3 +42,23 @@ describe("GoogleCalendarProvider", () => {
     expect(calls.filter((c) => c.url.includes("oauth2"))).toHaveLength(1); // Token wird wiederverwendet
   });
 });
+
+describe("Gmail-Versand über das Dienstkonto", () => {
+  afterEach(() => vi.unstubAllGlobals());
+  it("sendet im Namen von saadat@interpreting-nbg.de", async () => {
+    process.env.GOOGLE_DELEGATED_USER = "saadat@interpreting-nbg.de";
+    const calls: { url: string; body: string }[] = [];
+    vi.stubGlobal("fetch", async (url: string, init: RequestInit) => {
+      calls.push({ url, body: String(init.body) });
+      if (url.includes("oauth2")) return new Response(JSON.stringify({ access_token: "tok2", expires_in: 3600 }));
+      return new Response(JSON.stringify({ id: "msg1" }));
+    });
+    const { gmailSendRaw } = await import("../google-auth");
+    await gmailSendRaw(Buffer.from("Subject: Test\r\n\r\nHallo"));
+    const jwt = new URLSearchParams(calls[0].body).get("assertion")!;
+    const claims = JSON.parse(Buffer.from(jwt.split(".")[1], "base64url").toString());
+    expect(claims.sub).toBe("saadat@interpreting-nbg.de");
+    expect(claims.scope).toContain("gmail.send");
+    expect(calls[1].url).toContain("/gmail/v1/users/me/messages/send");
+  });
+});
