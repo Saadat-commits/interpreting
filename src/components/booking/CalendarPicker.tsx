@@ -42,6 +42,7 @@ export function CalendarPicker({
   const firstMonth = today.slice(0, 7);
   const [month, setMonth] = useState(selected ? selected.slice(0, 7) : firstMonth);
   const [days, setDays] = useState<DayInfo[] | null>(null);
+  const [source, setSource] = useState<"google" | "snapshot" | "local" | null>(null);
   const [error, setError] = useState(false);
   const [day, setDay] = useState<string | null>(null);
   const [autoAdvanced, setAutoAdvanced] = useState(0);
@@ -53,8 +54,9 @@ export function CalendarPicker({
     try {
       const res = await fetch(`/api/availability?service=${service}&duration=${duration}&month=${month}`, { cache: "no-store" });
       if (!res.ok) throw new Error();
-      const data = (await res.json()) as { days: DayInfo[] };
+      const data = (await res.json()) as { days: DayInfo[]; calendar?: "google" | "snapshot" | "local" };
       setDays(data.days);
+      setSource(data.calendar ?? null);
     } catch {
       setError(true);
     }
@@ -259,6 +261,8 @@ export function CalendarPicker({
           <span className="inline-flex items-center gap-2">
             <span className="h-3.5 w-3.5 rounded-[5px] border border-busy-line bg-busy-bg" /> {t.legendBusy}
           </span>
+          {source === "google" && <span className="inline-flex items-center gap-1.5 font-semibold text-brand-700">✓ {t.sourceGoogle}</span>}
+          {source === "snapshot" && <span className="text-ink-muted">{t.sourceSnapshot}</span>}
         </div>
       </div>
 

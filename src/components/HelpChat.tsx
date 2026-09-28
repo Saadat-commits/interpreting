@@ -10,6 +10,10 @@ import { IconClose, IconHelp, IconPhone, IconSend } from "./icons";
 
 type Bubble = { from: "bot" | "me"; text: string; fallback?: boolean };
 
+const OPEN_EVENT = "inbg:help";
+/** Öffnet die Online-Hilfe (z. B. über den Link „Hilfe“ in der Servicezeile) */
+export const openHelp = () => window.dispatchEvent(new Event(OPEN_EVENT));
+
 /**
  * Kleine „Hilfe“ unten rechts. Öffnet einen kompakten KI-Chat, der Fragen beantwortet
  * und auf Wunsch einen Termin bucht (mit E-Mail-Bestätigung wie beim Formular).
@@ -26,6 +30,12 @@ export function HelpChat({ locale, t }: { locale: Locale; t: Dictionary["help"] 
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" });
   }, [bubbles, busy]);
+
+  useEffect(() => {
+    const onOpen = () => setOpen(true);
+    window.addEventListener(OPEN_EVENT, onOpen);
+    return () => window.removeEventListener(OPEN_EVENT, onOpen);
+  }, []);
 
   useEffect(() => {
     if (open) inputRef.current?.focus();
@@ -66,14 +76,11 @@ export function HelpChat({ locale, t }: { locale: Locale; t: Dictionary["help"] 
     ask(input);
   };
 
+  if (!open) return null;
   return (
-    <div className="fixed bottom-4 end-4 z-50 flex flex-col items-end gap-3 print:hidden" dir={locale === "fa" ? "rtl" : "ltr"}>
-      {open && (
-        <section
-          role="dialog"
-          aria-label={t.title}
-          className="flex h-[min(78vh,560px)] w-[min(92vw,370px)] animate-fade-up flex-col overflow-hidden rounded-3xl border border-line bg-white shadow-deep"
-        >
+    <div className="fixed inset-0 z-50 print:hidden" dir={locale === "fa" ? "rtl" : "ltr"}>
+      <button type="button" aria-label={t.close} className="absolute inset-0 bg-ink/30" onClick={() => setOpen(false)} />
+      <section role="dialog" aria-modal="true" aria-label={t.title} className="absolute inset-y-0 end-0 flex w-[min(100vw,400px)] flex-col bg-white shadow-deep">
           <header className="flex items-center gap-3 border-b border-line px-4 py-3">
             <LogoMark size={32} />
             <div className="min-w-0 flex-1">
@@ -144,17 +151,16 @@ export function HelpChat({ locale, t }: { locale: Locale; t: Dictionary["help"] 
             </div>
             <p className="mt-2 text-center text-[11px] text-ink-faint">{t.note}</p>
           </form>
-        </section>
-      )}
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        aria-expanded={open}
-        className="inline-flex items-center gap-2 rounded-full border border-line bg-white px-4 py-2.5 text-[14px] font-bold text-ink shadow-lift transition hover:border-brand-200 hover:text-brand-700"
-      >
-        {open ? <IconClose size={17} /> : <IconHelp size={18} className="text-brand-600" />}
-        {t.button}
-      </button>
+      </section>
     </div>
+  );
+}
+
+/** Link/Knopf, der die Online-Hilfe öffnet (auch in Server-Komponenten nutzbar) */
+export function HelpLink({ children, className }: { children: React.ReactNode; className?: string }) {
+  return (
+    <button type="button" onClick={openHelp} className={className}>
+      {children}
+    </button>
   );
 }

@@ -7,6 +7,8 @@ import { MOCK_ADDRESSES } from "@/lib/server/places";
 import type { PostalAddress, TimeInterval } from "@/lib/types";
 import { citiesForPostalCode } from "@/lib/postal";
 import { CALENDAR_BUSY } from "./calendar-snapshot";
+import { liveBusy, liveConfirm, type LiveBooking } from "./live-google";
+import { getDictionary } from "@/lib/i18n";
 import { DEMO_STREETS, rankStreets } from "@/lib/streets";
 
 const extra: PostalAddress[] = [
@@ -25,7 +27,7 @@ const json = (data: unknown, status = 200) =>
   new Response(JSON.stringify(data), { status, headers: { "Content-Type": "application/json" } });
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 let seq = 41;
-const pending = new Map<string, { reference: string; start: string; end: string; email: string; location?: string; instant?: boolean }>();
+const pending = new Map<string, LiveBooking & { done?: Promise<{ calendar: boolean; email: boolean }> }>();
 
 export function installMockApi() {
   const real = window.fetch.bind(window);
@@ -35,11 +37,14 @@ export function installMockApi() {
     if (!path.startsWith("/api/")) return real(input, init);
 
     if (path === "/api/availability") {
-      await wait(250);
       const service = url.searchParams.get("service") as "phone" | "onsite";
       const [y, m] = (url.searchParams.get("month") ?? "").split("-").map(Number);
-      const days = computeMonth({ service, durationMinutes: Number(url.searchParams.get("duration")), year: y, month: m, busy: demoBusy() });
-      return json({ days });
+      // Live aus dem Google Kalender (falls verbunden), sonst Momentaufnahme
+      const from = new Date(Date.UTC(y, m - 1, 1) - 2 * 86400000);
+      const to = new Date(Date.UTC(y, m, 1) + 2 * 86400000);
+      const live = await liveBusy(from, to);
+      const days = computeMonth({ service, durationMinutes: Number(url.searchParams.get("duration")), year: y, month: m, busy: live ?? demoBusy() });
+      return json({ days, calendar: live ? "google" : "snapshot" });
     }
     if (path === "/api/places") {
       await wait(180);
@@ -63,7 +68,20 @@ export function installMockApi() {
       const end = new Date(start.getTime() + body.durationMinutes * 60000);
       const token = `demo${++seq}`;
       const location = body.onsite ? [body.onsite.institution, body.onsite.address?.label].filter(Boolean).join(", ") : undefined;
-      pending.set(token, { reference: `T-${start.getFullYear()}-${String(seq).padStart(4, "0")}`, start: start.toISOString(), end: end.toISOString(), email: body.contact?.email, location, instant: body.phoneSession?.mode === "instant" });
+      pending.set(token, {
+        reference: `T-${start.getFullYear()}-${String(seq).padStart(4, "0")}`,
+        start: start.toISOString(),
+        end: end.toISOString(),
+        email: body.contact?.email,
+        location,
+        instant: body.phoneSession?.mode === "instant",
+        service: body.service,
+        languageLabel: getDictionary("de").languages[body.language as "dari"] ?? body.language,
+        contactName: body.contact?.name ?? "",
+        phone: body.contact?.phone ?? "",
+        clientName: body.clientName,
+        organisation: body.organisation?.name,
+      });
       const holdUntil = new Date(Date.now() + 60 * 60000).toISOString();
       return json({ id: token, status: "pending", email: body.contact?.email, start: start.toISOString(), end: end.toISOString(), holdUntil, demoToken: token }, 201);
     }
@@ -71,7 +89,11 @@ export function installMockApi() {
       await wait(1100);
       const { token } = JSON.parse(String(init?.body ?? "{}"));
       const b = pending.get(token);
-      return b ? json(b) : json({ error: "invalid" }, 404);
+      if (!b) return json({ error: "invalid" }, 404);
+      // Nur einmal eintragen/senden, auch wenn die Bestätigung doppelt aufgerufen wird
+      b.done ??= liveConfirm(b);
+      const result = await b.done;
+      return json({ ...b, done: undefined, liveCalendar: result.calendar, liveEmail: result.email });
     }
     if (path === "/api/bookings/resend") {
       await wait(600);

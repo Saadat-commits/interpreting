@@ -5,10 +5,32 @@ import { usePathname } from "next/navigation";
 import type { Locale } from "@/lib/types";
 import { IconGlobe } from "./icons";
 
-export function LanguageSwitcher({ locale, label }: { locale: Locale; label: string }) {
+export function LanguageSwitcher({ locale, label, compact }: { locale: Locale; label: string; compact?: boolean }) {
   const pathname = usePathname() || `/${locale}`;
   const target: Locale = locale === "de" ? "fa" : "de";
   const href = pathname.replace(/^\/(de|fa)(?=\/|$)/, `/${target}`);
+  if (compact) {
+    // Servicezeile: schlichte Textumschaltung
+    return (
+      <div className="flex items-center gap-1" role="group" aria-label={label}>
+        <IconGlobe size={14} className="opacity-80" />
+        {(["de", "fa"] as const).map((l, i) => (
+          <span key={l} className="flex items-center gap-1">
+            {i > 0 && <span className="opacity-50">|</span>}
+            {l === locale ? (
+              <span className="font-bold underline underline-offset-4" aria-current="true" lang={l}>
+                {l === "de" ? "Deutsch" : "فارسی"}
+              </span>
+            ) : (
+              <Link href={href} hrefLang={l} lang={l} className="opacity-90 hover:underline">
+                {l === "de" ? "Deutsch" : "فارسی"}
+              </Link>
+            )}
+          </span>
+        ))}
+      </div>
+    );
+  }
   return (
     <div className="flex items-center rounded-full border border-line bg-white p-1 text-sm shadow-soft" role="group" aria-label={label}>
       <IconGlobe size={16} className="mx-1.5 hidden text-ink-muted sm:block" />

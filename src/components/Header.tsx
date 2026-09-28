@@ -1,74 +1,118 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { site } from "@/config/site";
 import type { Dictionary } from "@/lib/i18n";
 import type { Locale } from "@/lib/types";
-import { Logo } from "./Logo";
+import { openHelp } from "./HelpChat";
 import { LanguageSwitcher } from "./LanguageSwitcher";
-import { IconArrow, IconPhone } from "./icons";
+import { Logo } from "./Logo";
+import { IconClose, IconHelp, IconMail, IconMenu, IconPhone } from "./icons";
+import { navItems, type NavKey } from "./nav";
 
 /**
- * Kopfzeile: Logo · Leistungen · AGB · Telefonnummer (immer sichtbar) · Sprache · Termin buchen.
+ * Kopfbereich wie bei einer Behörden-Website:
+ *  1. Servicezeile: Telefon · E-Mail · Hilfe · Sprache
+ *  2. Logo
+ *  3. Hauptnavigation – die aktuelle Seite ist markiert
  */
-export function Header({ locale, t, minimal = false }: { locale: Locale; t: Dictionary["nav"]; minimal?: boolean }) {
-  const [scrolled, setScrolled] = useState(false);
-
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 8);
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
+export function Header({ locale, t, active }: { locale: Locale; t: Dictionary; active?: NavKey }) {
+  const g = t.gov;
+  const [open, setOpen] = useState(false);
+  const items = navItems(locale, g);
 
   return (
-    <header className={`sticky top-0 z-40 bg-white/90 backdrop-blur-xl transition-shadow duration-300 ${scrolled ? "shadow-[0_1px_0_#E4EAE6,0_8px_30px_-18px_rgba(16,40,28,.25)]" : ""}`}>
-      <div className="container-page flex h-[68px] items-center justify-between gap-3">
-        <Logo locale={locale} />
-        {!minimal && (
-          <nav className="hidden items-center gap-1 md:flex" aria-label="Hauptnavigation">
-            <Link href={`/${locale}#leistungen`} className="rounded-full px-4 py-2 text-[15px] font-medium text-ink-soft transition hover:bg-brand-50 hover:text-brand-700">
-              {t.services}
-            </Link>
-            <a href={site.agbUrl} target="_blank" rel="noopener" className="rounded-full px-4 py-2 text-[15px] font-medium text-ink-soft transition hover:bg-brand-50 hover:text-brand-700">
-              {t.terms}
+    <header className="relative z-40 bg-white">
+      {/* Servicezeile */}
+      <div className="bg-brand-800 text-white">
+        <div className="container-page flex h-10 items-center justify-between gap-4 text-[13px]">
+          <div className="flex min-w-0 items-center gap-5">
+            <a href={site.phoneHref} className="inline-flex items-center gap-1.5 whitespace-nowrap font-semibold hover:underline">
+              <IconPhone size={14} /> <span dir="ltr">{site.phone}</span>
             </a>
-          </nav>
-        )}
-        <div className="flex items-center gap-2">
-          <a
-            href={site.phoneHref}
-            className="flex h-10 items-center gap-2 rounded-full border border-line bg-white px-3 text-[14px] font-bold text-ink transition hover:border-brand-200 sm:px-4"
-            aria-label={site.phone}
-          >
-            <IconPhone size={17} className="text-brand-600" />
-            <span className="hidden sm:inline" dir="ltr">
-              {site.phone}
-            </span>
-          </a>
-          <LanguageSwitcher locale={locale} label={t.switchLabel} />
-          {!minimal && (
-            <Link href={`/${locale}/termin`} className="btn-primary hidden !px-5 !py-2.5 lg:inline-flex">
-              {t.book} <IconArrow size={17} className="rtl:rotate-180" />
-            </Link>
-          )}
+            <a href={`mailto:${site.email}`} className="hidden items-center gap-1.5 hover:underline sm:inline-flex">
+              <IconMail size={14} /> <span dir="ltr">{site.email}</span>
+            </a>
+          </div>
+          <div className="flex items-center gap-4">
+            <button type="button" onClick={openHelp} className="inline-flex items-center gap-1.5 font-semibold hover:underline">
+              <IconHelp size={15} /> {g.help}
+            </button>
+            <LanguageSwitcher locale={locale} label={t.nav.switchLabel} compact />
+          </div>
         </div>
       </div>
-      {!minimal && (
-        // Mobil: die drei Ziele als ruhige Leiste – kein Menü nötig
-        <nav className="container-page flex gap-2 overflow-x-auto pb-2.5 md:hidden" aria-label="Navigation">
-          <Link href={`/${locale}/termin`} className="shrink-0 rounded-full bg-brand-600 px-4 py-1.5 text-[14px] font-semibold text-white">
-            {t.book}
-          </Link>
-          <Link href={`/${locale}#leistungen`} className="shrink-0 rounded-full border border-line px-4 py-1.5 text-[14px] font-medium text-ink-soft">
-            {t.services}
-          </Link>
-          <a href={site.agbUrl} target="_blank" rel="noopener" className="shrink-0 rounded-full border border-line px-4 py-1.5 text-[14px] font-medium text-ink-soft">
-            {t.terms}
-          </a>
+
+      {/* Logo + Navigation */}
+      <div className="border-b border-line">
+        <div className="container-page flex h-[72px] items-center justify-between gap-4">
+          <Logo locale={locale} />
+          <button
+            type="button"
+            className="inline-flex items-center gap-2 rounded-lg border border-line px-3 py-2 text-[14px] font-semibold text-ink md:hidden"
+            aria-expanded={open}
+            aria-controls="hauptmenue"
+            onClick={() => setOpen((o) => !o)}
+          >
+            {open ? <IconClose size={18} /> : <IconMenu size={18} />} {open ? t.nav.close : t.nav.menu}
+          </button>
+        </div>
+        <nav id="hauptmenue" aria-label="Hauptnavigation" className={`${open ? "block" : "hidden"} border-t border-line md:block`}>
+          <ul className="container-page flex flex-col md:flex-row md:gap-1">
+            {items.map((it) => {
+              const isActive = it.key === active;
+              return (
+                <li key={it.key}>
+                  <Link
+                    href={it.href}
+                    onClick={() => setOpen(false)}
+                    aria-current={isActive ? "page" : undefined}
+                    className={`block border-b-[3px] px-1 py-3 text-[15px] font-semibold transition md:px-4 ${
+                      isActive ? "border-brand-600 text-brand-800" : "border-transparent text-ink-soft hover:border-brand-200 hover:text-brand-700"
+                    } ${it.key === "book" && !isActive ? "text-brand-700" : ""}`}
+                  >
+                    {it.label}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
         </nav>
-      )}
+      </div>
     </header>
+  );
+}
+
+/** Seitenkopf: Brotkrumen, Überschrift und kurze Einleitung */
+export function PageHeader({ locale, t, title, lead, crumbs = [] }: { locale: Locale; t: Dictionary; title: string; lead?: string; crumbs?: { href?: string; label: string }[] }) {
+  return (
+    <div className="border-b border-line bg-[#F6F9F7]">
+      <div className="container-page py-7 sm:py-9">
+        <nav aria-label={t.gov.breadcrumb} className="text-[13px] text-ink-muted">
+          <ol className="flex flex-wrap items-center gap-1.5">
+            <li>
+              <Link href={`/${locale}`} className="text-brand-700 hover:underline">
+                {t.gov.home}
+              </Link>
+            </li>
+            {crumbs.map((c) => (
+              <li key={c.label} className="flex items-center gap-1.5">
+                <span aria-hidden="true">›</span>
+                {c.href ? (
+                  <Link href={c.href} className="text-brand-700 hover:underline">
+                    {c.label}
+                  </Link>
+                ) : (
+                  <span aria-current="page">{c.label}</span>
+                )}
+              </li>
+            ))}
+          </ol>
+        </nav>
+        <h1 className="mt-3 text-[1.9rem] font-bold leading-tight tracking-tight text-ink sm:text-[2.4rem]">{title}</h1>
+        {lead && <p className="mt-3 max-w-3xl text-[17px] leading-relaxed text-ink-soft">{lead}</p>}
+      </div>
+    </div>
   );
 }

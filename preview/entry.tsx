@@ -1,7 +1,8 @@
 import { StrictMode, useEffect, useSyncExternalStore } from "react";
 import { createRoot } from "react-dom/client";
-import { Header } from "@/components/Header";
-import { HomeContent } from "@/components/HomeContent";
+import { Header, PageHeader } from "@/components/Header";
+import { Footer } from "@/components/Footer";
+import { ContactContent, HomeContent, InfoContent, ServicesContent } from "@/components/HomeContent";
 import { LegalPage } from "@/components/LegalPage";
 import { HelpChat } from "@/components/HelpChat";
 import { BookingWizard } from "@/components/booking/BookingWizard";
@@ -45,12 +46,12 @@ function App() {
   if (page === "termin" && seg[2] === "bestaetigen") {
     content = (
       <>
-        <Header locale={locale} t={t.nav} minimal />
-        <main className="relative min-h-[80vh] overflow-hidden pb-32">
-          <div className="container-page relative max-w-3xl pt-12">
-            <VerifyBooking key={path} t={t} locale={locale} token={params.get("t") ?? ""} />
-          </div>
+        <Header locale={locale} t={t} active="book" />
+        <PageHeader locale={locale} t={t} title={t.gov.book} crumbs={[{ href: `/${locale}/termin`, label: t.gov.book }, { label: "✓" }]} />
+        <main className="container-page max-w-3xl py-10">
+          <VerifyBooking key={path} t={t} locale={locale} token={params.get("t") ?? ""} />
         </main>
+        <Footer locale={locale} t={t} />
       </>
     );
   } else if (page === "termin") {
@@ -58,9 +59,10 @@ function App() {
     const anlass = params.get("anlass");
     content = (
       <>
-        <Header locale={locale} t={t.nav} minimal />
-        <main className="relative min-h-[80vh] overflow-x-clip pb-32">
-          <div className="container-page relative max-w-6xl">
+        <Header locale={locale} t={t} active="book" />
+        <PageHeader locale={locale} t={t} title={t.gov.book} lead={t.booking.subtitle} crumbs={[{ label: t.gov.book }]} />
+        <main className="pb-10">
+          <div className="container-page">
             <BookingWizard
               key={path}
               locale={locale}
@@ -71,8 +73,15 @@ function App() {
             />
           </div>
         </main>
+        <Footer locale={locale} t={t} />
       </>
     );
+  } else if (page === "leistungen") {
+    content = <ServicesContent key={locale} locale={locale} t={t} />;
+  } else if (page === "informationen") {
+    content = <InfoContent key={locale} locale={locale} t={t} />;
+  } else if (page === "kontakt") {
+    content = <ContactContent key={locale} locale={locale} t={t} />;
   } else if (page === "impressum" || page === "datenschutz") {
     content = (
       <LegalPage locale={locale} t={t} title={page === "impressum" ? t.legal.imprint : t.legal.privacy}>

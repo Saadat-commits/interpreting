@@ -20,6 +20,9 @@ export interface ConfirmedBooking {
   location?: string;
   /** Sofort-Anruf: statt Termin wird die Telefonnummer groß angezeigt */
   instant?: boolean;
+  /** Nur Vorschau: ob Kalendereintrag/E-Mail über die Google-Connectoren geklappt haben */
+  liveCalendar?: boolean;
+  liveEmail?: boolean;
 }
 
 export interface PendingBooking {
@@ -183,6 +186,16 @@ export function SuccessCard({ t, locale, booking }: { t: T; locale: Locale; book
           </span>
         )}
       </div>
+      {DEMO && (
+        <ul className="relative mx-auto mt-6 max-w-md space-y-1.5 text-start text-[14px]">
+          <li className={booking.liveCalendar ? "text-brand-700" : "text-ink-muted"}>
+            {booking.liveCalendar ? "✓ In Ihren Google Kalender eingetragen" : "– Kalendereintrag nur auf der echten Website (Google-Verbindung hier nicht freigegeben)"}
+          </li>
+          <li className={booking.liveEmail ? "text-brand-700" : "text-ink-muted"}>
+            {booking.liveEmail ? `✓ Bestätigungs-E-Mail über Gmail an ${booking.email} gesendet` : "– E-Mail-Versand nur auf der echten Website (Gmail hier nicht freigegeben)"}
+          </li>
+        </ul>
+      )}
       {booking.instant && (
         <a href={site.phoneHref} className="btn-primary relative mx-auto mt-8 !px-8 !py-5 !text-lg" dir="ltr">
           <IconPhone size={22} /> {site.phone}

@@ -1,19 +1,23 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { site } from "@/config/site";
-import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
+import { Header, PageHeader } from "@/components/Header";
+import { HelpLink } from "@/components/HelpChat";
 import type { Dictionary } from "@/lib/i18n";
 import type { Locale } from "@/lib/types";
 import {
   IconArrow,
   IconBriefcase,
   IconBuilding,
+  IconCalendar,
   IconCheck,
   IconCounsel,
   IconDoc,
   IconFamily,
+  IconHelp,
   IconHome,
+  IconMail,
   IconMedical,
   IconPhone,
   IconPin,
@@ -35,172 +39,323 @@ const serviceIcons: Record<string, ReactNode> = {
   home: <IconHome size={22} />,
 };
 
-/**
- * Startseite – bewusst ruhig: weiß, grün als einzige Akzentfarbe, echte Fotos
- * afghanischer Berge. Nur drei Dinge: Informationen (Leistungen), Termin buchen, AGB.
- */
-export function HomeContent({ locale, t }: { locale: Locale; t: Dictionary }) {
-  const h = t.home;
-  const book = (q = "") => `/${locale}/termin${q}`;
-  const [titleA, titleB] = h.title.split("\n");
+const tileIcons: Record<string, ReactNode> = {
+  book: <IconCalendar size={26} />,
+  services: <IconBriefcase size={26} />,
+  info: <IconDoc size={26} />,
+  contact: <IconPhone size={26} />,
+};
 
+/* ---------- Bausteine ---------- */
+
+function Section({ title, children, id }: { title: string; children: ReactNode; id?: string }) {
+  return (
+    <section id={id} className="scroll-mt-6 pt-12 first:pt-10">
+      <h2 className="border-s-4 border-brand-600 ps-3 text-[1.45rem] font-bold leading-tight text-ink sm:text-[1.6rem]">{title}</h2>
+      <div className="mt-5">{children}</div>
+    </section>
+  );
+}
+
+function Notice({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <div className="rounded-xl border border-brand-200 bg-brand-50/50 p-5 sm:p-6">
+      <div className="flex items-center gap-2 text-[16px] font-bold text-brand-800">
+        <IconHelp size={20} /> {title}
+      </div>
+      <div className="mt-2 text-[15px] leading-relaxed text-ink-soft">{children}</div>
+    </div>
+  );
+}
+
+function PageShell({ locale, t, active, children }: { locale: Locale; t: Dictionary; active: Parameters<typeof Header>[0]["active"]; children: ReactNode }) {
   return (
     <>
-      <Header locale={locale} t={t.nav} />
-      <main className="overflow-x-clip">
-        {/* ---------- Hero ---------- */}
-        <section className="container-page pt-8 sm:pt-14">
-          <div className="max-w-3xl">
-            <p className="inline-flex items-center gap-2 rounded-full border border-brand-100 bg-white px-3.5 py-1.5 text-[13px] font-semibold text-brand-700">
-              <span className="h-1.5 w-1.5 rounded-full bg-brand-500" aria-hidden="true" />
-              {h.eyebrow}
-            </p>
-            <h1 className="mt-5 text-[2.1rem] font-bold leading-[1.1] tracking-tight text-ink sm:text-[3.4rem]">
-              {titleA}
-              <br />
-              <span className="text-brand-700">{titleB}</span>
-            </h1>
-            <p className="mt-5 max-w-2xl text-[17px] leading-relaxed text-ink-soft sm:text-lg">{h.lead}</p>
-            <div className="mt-7 flex flex-wrap items-center gap-3">
-              <Link href={book()} className="btn-primary !px-7 !py-4 !text-base">
-                {h.ctaBook} <IconArrow size={19} className="rtl:rotate-180" />
-              </Link>
-              <a href={site.phoneHref} className="btn-ghost !px-6 !py-4 !text-base">
-                <IconPhone size={18} className="text-brand-600" />
-                <span dir="ltr">{site.phone}</span>
-              </a>
-            </div>
-            <ul className="mt-7 flex flex-col gap-2.5 text-[15px] text-ink-soft sm:flex-row sm:flex-wrap sm:gap-x-6">
-              {h.facts.map((f) => (
-                <li key={f} className="flex items-center gap-2">
-                  <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-brand-600 text-white">
-                    <IconCheck size={12} strokeWidth={3} />
-                  </span>
-                  {f}
-                </li>
-              ))}
-            </ul>
-          </div>
-        </section>
-
-        {/* Panorama: Nuristan */}
-        <figure className="container-page mt-10 sm:mt-14">
-          <div className="relative overflow-hidden rounded-[28px] bg-brand-50 shadow-[0_30px_60px_-30px_rgba(16,40,28,.35)]">
-            <img
-              src={imageUrl("nuristan.jpg")}
-              srcSet={`${imageUrl("nuristan-sm.jpg")} 1000w, ${imageUrl("nuristan.jpg")} 2000w`}
-              sizes="(min-width: 1152px) 1100px, 100vw"
-              alt=""
-              className="h-[240px] w-full object-cover sm:h-[440px]"
-              fetchPriority="high"
-            />
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-white/50 to-transparent" aria-hidden="true" />
-            <figcaption className="absolute bottom-3 end-3 rounded-full bg-white/85 px-3 py-1 text-[11px] text-ink-muted backdrop-blur">{h.heroCredit}</figcaption>
-          </div>
-        </figure>
-
-        {/* ---------- Zwei Wege ---------- */}
-        <section id="leistungen" className="container-page scroll-mt-24 pt-20 sm:pt-28">
-          <h2 className="text-[1.75rem] font-bold tracking-tight text-ink sm:text-4xl">{h.waysTitle}</h2>
-          <div className="mt-8 grid grid-cols-1 gap-5 md:grid-cols-2">
-            <WayCard icon={<IconPin size={26} />} title={h.onsite.title} text={h.onsite.text} area={h.onsite.area} cta={h.onsite.cta} href={book("?leistung=onsite")} />
-            <WayCard icon={<IconPhone size={26} />} title={h.phone.title} text={h.phone.text} area={h.phone.area} cta={h.phone.cta} href={book("?leistung=phone")} />
-          </div>
-        </section>
-
-        {/* ---------- Wobei ich übersetze ---------- */}
-        <section className="container-page pt-20 sm:pt-28">
-          <h2 className="text-[1.75rem] font-bold tracking-tight text-ink sm:text-4xl">{h.servicesTitle}</h2>
-          <p className="mt-3 text-[17px] text-ink-muted">{h.servicesLead}</p>
-          <ul className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 lg:gap-4">
-            {h.services.map((s) => (
-              <li key={s.title}>
-                <Link
-                  href={book(`?leistung=onsite&anlass=${s.key}`)}
-                  className="group flex h-full items-start gap-4 rounded-2xl border border-line bg-white p-4 transition hover:-translate-y-0.5 hover:border-brand-200 hover:shadow-lift lg:flex-col lg:gap-3 lg:p-5"
-                >
-                  <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-700 transition group-hover:bg-brand-600 group-hover:text-white">
-                    {serviceIcons[s.icon]}
-                  </span>
-                  <span className="min-w-0">
-                    <span className="block text-[16px] font-bold text-ink">{s.title}</span>
-                    <span className="mt-1 block text-[14px] leading-relaxed text-ink-muted">{s.text}</span>
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
-
-        {/* ---------- Für Einrichtungen ---------- */}
-        <section className="container-page pt-20 sm:pt-28">
-          <div className="grid grid-cols-1 gap-8 rounded-[28px] border border-line bg-white p-6 sm:p-10 lg:grid-cols-[1.2fr_1fr] lg:items-center">
-            <div>
-              <p className="text-[13px] font-bold uppercase tracking-[0.14em] text-brand-700">{h.orgEyebrow}</p>
-              <h2 className="mt-3 text-[1.6rem] font-bold leading-tight tracking-tight text-ink sm:text-3xl">{h.orgTitle}</h2>
-              <p className="mt-4 text-[16px] leading-relaxed text-ink-soft">{h.orgText}</p>
-              <Link href={book("?wer=einrichtung")} className="btn-primary mt-7 !px-6 !py-3.5">
-                {h.orgCta} <IconArrow size={18} className="rtl:rotate-180" />
-              </Link>
-            </div>
-            <ul className="space-y-3">
-              {h.orgPoints.map((p) => (
-                <li key={p} className="flex items-center gap-3 rounded-2xl bg-brand-50/60 px-4 py-3.5 text-[15px] font-semibold text-ink">
-                  <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white text-brand-700 ring-1 ring-brand-100">
-                    <IconCheck size={15} strokeWidth={2.6} />
-                  </span>
-                  {p}
-                </li>
-              ))}
-            </ul>
-          </div>
-        </section>
-
-        {/* ---------- Abschluss: Band-e Amir ---------- */}
-        <section className="container-page pt-20 sm:pt-28">
-          <div className="relative overflow-hidden rounded-[28px]">
-            <img
-              src={imageUrl("band-e-amir.jpg")}
-              srcSet={`${imageUrl("band-e-amir-sm.jpg")} 1000w, ${imageUrl("band-e-amir.jpg")} 2000w`}
-              sizes="(min-width: 1152px) 1100px, 100vw"
-              alt=""
-              loading="lazy"
-              className="h-[380px] w-full object-cover sm:h-[420px]"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#0d2a1c]/85 via-[#0d2a1c]/35 to-transparent" aria-hidden="true" />
-            <div className="absolute inset-x-0 bottom-0 p-6 sm:p-10">
-              <h2 className="text-[1.6rem] font-bold leading-tight text-white sm:text-4xl">{h.closingTitle}</h2>
-              <p className="mt-2 max-w-xl text-[16px] text-white/85">{h.closingText}</p>
-              <div className="mt-6 flex flex-wrap gap-3">
-                <Link href={book()} className="btn bg-white !px-6 !py-3.5 text-brand-800 shadow-lift hover:bg-brand-50">
-                  {h.ctaBook} <IconArrow size={18} className="rtl:rotate-180" />
-                </Link>
-                <a href={site.agbUrl} target="_blank" rel="noopener" className="btn border border-white/40 !px-5 !py-3.5 text-white hover:bg-white/10">
-                  <IconDoc size={18} /> {h.agbTitle}
-                </a>
-              </div>
-            </div>
-            <p className="absolute end-3 top-3 rounded-full bg-black/30 px-3 py-1 text-[11px] text-white/85 backdrop-blur">{h.closingCredit}</p>
-          </div>
-        </section>
-      </main>
+      <Header locale={locale} t={t} active={active} />
+      <main>{children}</main>
       <Footer locale={locale} t={t} />
     </>
   );
 }
 
-function WayCard({ icon, title, text, area, cta, href }: { icon: ReactNode; title: string; text: string; area: string; cta: string; href: string }) {
+/* ---------- Startseite ---------- */
+
+export function HomeContent({ locale, t }: { locale: Locale; t: Dictionary }) {
+  const g = t.gov;
+  const hrefs: Record<string, string> = {
+    book: `/${locale}/termin`,
+    services: `/${locale}/leistungen`,
+    info: `/${locale}/informationen`,
+    contact: `/${locale}/kontakt`,
+  };
   return (
-    <div className="flex flex-col rounded-[24px] border border-line bg-white p-6 transition hover:border-brand-200 hover:shadow-lift sm:p-8">
-      <span className="grid h-14 w-14 place-items-center rounded-2xl bg-brand-600 text-white shadow-[0_12px_24px_-12px_rgba(31,112,73,.8)]">{icon}</span>
-      <h3 className="mt-5 text-2xl font-bold text-ink">{title}</h3>
-      <p className="mt-2 text-[16px] leading-relaxed text-ink-soft">{text}</p>
-      <p className="mt-4 flex items-start gap-2 rounded-xl bg-brand-50/60 px-3.5 py-2.5 text-[14px] font-semibold text-brand-800">
-        <IconPin size={16} className="mt-0.5 shrink-0" /> {area}
-      </p>
-      <Link href={href} className="mt-6 inline-flex items-center gap-2 self-start text-[15px] font-bold text-brand-700 hover:gap-3 hover:underline">
-        {cta} <IconArrow size={17} className="rtl:rotate-180" />
-      </Link>
-    </div>
+    <PageShell locale={locale} t={t} active="home">
+      {/* Titel mit Bergfoto */}
+      <div className="border-b border-line">
+        <div className="container-page grid grid-cols-1 items-center gap-8 py-8 sm:py-10 lg:grid-cols-[1.1fr_1fr]">
+          <div>
+            <h1 className="text-[1.9rem] font-bold leading-tight tracking-tight text-ink sm:text-[2.5rem]">{g.start.title}</h1>
+            <p className="mt-4 text-[17px] leading-relaxed text-ink-soft">{g.start.lead}</p>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <Link href={hrefs.book} className="btn-primary !rounded-lg !px-6 !py-3.5">
+                {g.book} <IconArrow size={18} className="rtl:rotate-180" />
+              </Link>
+              <a href={site.phoneHref} className="btn-ghost !rounded-lg !px-5 !py-3.5">
+                <IconPhone size={18} className="text-brand-600" /> <span dir="ltr">{site.phone}</span>
+              </a>
+            </div>
+          </div>
+          <figure className="relative overflow-hidden rounded-xl">
+            <img
+              src={imageUrl("nuristan-sm.jpg")}
+              srcSet={`${imageUrl("nuristan-sm.jpg")} 1000w, ${imageUrl("nuristan.jpg")} 2000w`}
+              sizes="(min-width: 1024px) 520px, 100vw"
+              alt=""
+              className="h-[200px] w-full object-cover sm:h-[280px]"
+            />
+            <figcaption className="absolute bottom-2 end-2 rounded bg-white/85 px-2 py-0.5 text-[10.5px] text-ink-muted">{t.home.heroCredit}</figcaption>
+          </figure>
+        </div>
+      </div>
+
+      <div className="container-page">
+        {/* Online-Dienste */}
+        <Section title={g.start.tilesTitle}>
+          <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {g.start.tiles.map((tile) => (
+              <li key={tile.key}>
+                <Link
+                  href={hrefs[tile.key]}
+                  className={`group flex h-full flex-col rounded-xl border p-5 transition hover:shadow-lift ${
+                    tile.key === "book" ? "border-brand-600 bg-brand-600 text-white" : "border-line bg-white hover:border-brand-300"
+                  }`}
+                >
+                  <span className={tile.key === "book" ? "text-white" : "text-brand-700"}>{tileIcons[tile.key]}</span>
+                  <span className="mt-3 text-[18px] font-bold">{tile.title}</span>
+                  <span className={`mt-1 text-[14px] leading-relaxed ${tile.key === "book" ? "text-white/85" : "text-ink-muted"}`}>{tile.text}</span>
+                  <span className={`mt-4 inline-flex items-center gap-1.5 text-[14px] font-semibold ${tile.key === "book" ? "text-white" : "text-brand-700"}`}>
+                    <IconArrow size={16} className="transition group-hover:translate-x-0.5 rtl:rotate-180" />
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </Section>
+
+        {/* Häufig gebucht */}
+        <Section title={g.start.frequentTitle}>
+          <ul className="grid grid-cols-1 overflow-hidden rounded-xl border border-line sm:grid-cols-2">
+            {t.home.services.map((s, i) => (
+              <li key={s.title} className={`border-line ${i > 0 ? "border-t" : ""} ${i === 1 ? "sm:border-t-0" : ""} ${i % 2 === 1 ? "sm:border-s" : ""}`}>
+                <Link href={`/${locale}/termin?leistung=onsite&anlass=${s.key}`} className="flex items-center gap-3 px-4 py-3.5 hover:bg-brand-50/60">
+                  <span className="text-brand-700">{serviceIcons[s.icon]}</span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[15px] font-semibold text-ink">{s.title}</span>
+                    <span className="block truncate text-[13px] text-ink-muted">{s.text}</span>
+                  </span>
+                  <IconArrow size={16} className="shrink-0 text-brand-600 rtl:rotate-180" />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </Section>
+
+        {/* Hinweis für Einrichtungen */}
+        <section className="pt-12">
+          <Notice title={g.start.noticeTitle}>
+            <p>{t.home.orgText}</p>
+            <Link href={`/${locale}/termin?wer=einrichtung`} className="mt-3 inline-flex items-center gap-1.5 font-semibold text-brand-700 hover:underline">
+              {t.home.orgCta} <IconArrow size={16} className="rtl:rotate-180" />
+            </Link>
+          </Notice>
+        </section>
+      </div>
+    </PageShell>
+  );
+}
+
+/* ---------- Leistungen ---------- */
+
+export function ServicesContent({ locale, t }: { locale: Locale; t: Dictionary }) {
+  const g = t.gov;
+  const p = g.servicesPage;
+  return (
+    <PageShell locale={locale} t={t} active="services">
+      <PageHeader locale={locale} t={t} title={g.services} lead={p.lead} crumbs={[{ label: g.services }]} />
+      <div className="container-page">
+        <Section title={p.factsTitle}>
+          <dl className="overflow-hidden rounded-xl border border-line">
+            {p.facts.map((f, i) => (
+              <div key={f.label} className={`grid grid-cols-1 gap-1 px-4 py-3.5 sm:grid-cols-[200px_1fr] sm:gap-6 ${i ? "border-t border-line" : ""} ${i % 2 ? "bg-[#F9FBFA]" : "bg-white"}`}>
+                <dt className="text-[14px] font-bold text-ink">{f.label}</dt>
+                <dd className="text-[15px] text-ink-soft">{f.value}</dd>
+              </div>
+            ))}
+          </dl>
+        </Section>
+
+        <Section title={t.home.waysTitle}>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            {[
+              { icon: <IconPin size={22} />, w: t.home.onsite, href: `/${locale}/termin?leistung=onsite` },
+              { icon: <IconPhone size={22} />, w: t.home.phone, href: `/${locale}/termin?leistung=phone` },
+            ].map(({ icon, w, href }) => (
+              <div key={w.title} className="flex flex-col rounded-xl border border-line p-5">
+                <div className="flex items-center gap-3">
+                  <span className="grid h-10 w-10 place-items-center rounded-lg bg-brand-600 text-white">{icon}</span>
+                  <h3 className="text-[18px] font-bold text-ink">{w.title}</h3>
+                </div>
+                <p className="mt-3 text-[15px] text-ink-soft">{w.text}</p>
+                <p className="mt-2 text-[14px] text-ink-muted">{w.area}</p>
+                <Link href={href} className="mt-4 inline-flex items-center gap-1.5 self-start font-semibold text-brand-700 hover:underline">
+                  {w.cta} <IconArrow size={16} className="rtl:rotate-180" />
+                </Link>
+              </div>
+            ))}
+          </div>
+        </Section>
+
+        <Section title={p.listTitle}>
+          <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {t.home.services.map((s) => (
+              <li key={s.title} className="flex gap-4 rounded-xl border border-line p-4">
+                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-brand-50 text-brand-700">{serviceIcons[s.icon]}</span>
+                <div className="min-w-0">
+                  <h3 className="text-[16px] font-bold text-ink">{s.title}</h3>
+                  <p className="mt-1 text-[14px] text-ink-muted">{s.text}</p>
+                  <Link href={`/${locale}/termin?leistung=onsite&anlass=${s.key}`} className="mt-2 inline-flex items-center gap-1 text-[14px] font-semibold text-brand-700 hover:underline">
+                    {p.bookThis} <IconArrow size={14} className="rtl:rotate-180" />
+                  </Link>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </Section>
+
+        <section className="pt-12">
+          <Notice title={g.start.noticeTitle}>
+            <p>{t.home.orgText}</p>
+          </Notice>
+        </section>
+      </div>
+    </PageShell>
+  );
+}
+
+/* ---------- Informationen & AGB ---------- */
+
+export function InfoContent({ locale, t }: { locale: Locale; t: Dictionary }) {
+  const g = t.gov;
+  const p = g.infoPage;
+  return (
+    <PageShell locale={locale} t={t} active="info">
+      <PageHeader locale={locale} t={t} title={g.info} lead={p.lead} crumbs={[{ label: g.info }]} />
+      <div className="container-page">
+        <Section title={p.stepsTitle}>
+          <ol className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {p.steps.map((s, i) => (
+              <li key={s.title} className="rounded-xl border border-line p-5">
+                <span className="grid h-9 w-9 place-items-center rounded-full bg-brand-600 text-[15px] font-bold text-white">{i + 1}</span>
+                <h3 className="mt-3 text-[16px] font-bold text-ink">{s.title}</h3>
+                <p className="mt-1.5 text-[14px] leading-relaxed text-ink-muted">{s.text}</p>
+              </li>
+            ))}
+          </ol>
+        </Section>
+
+        <Section title={p.billingTitle}>
+          <ul className="space-y-2.5">
+            {p.billing.map((b) => (
+              <li key={b} className="flex items-start gap-3 text-[15px] text-ink-soft">
+                <IconCheck size={18} strokeWidth={2.4} className="mt-0.5 shrink-0 text-brand-600" /> {b}
+              </li>
+            ))}
+          </ul>
+        </Section>
+
+        <Section title={p.agbTitle} id="agb">
+          <div className="flex flex-col items-start gap-4 rounded-xl border border-line p-5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-3">
+              <IconDoc size={28} className="shrink-0 text-brand-700" />
+              <p className="text-[15px] text-ink-soft">{p.agbText}</p>
+            </div>
+            <a href={site.agbUrl} target="_blank" rel="noopener" className="btn-primary shrink-0 !rounded-lg !px-5 !py-3">
+              {p.agbCta}
+            </a>
+          </div>
+        </Section>
+
+        <Section title={p.faqTitle}>
+          <div className="divide-y divide-line overflow-hidden rounded-xl border border-line">
+            {p.faq.map((f) => (
+              <details key={f.q} className="group">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-4 py-4 text-[15px] font-semibold text-ink hover:bg-brand-50/50">
+                  {f.q}
+                  <span className="text-brand-700 transition group-open:rotate-45" aria-hidden="true">
+                    +
+                  </span>
+                </summary>
+                <p className="px-4 pb-4 text-[15px] leading-relaxed text-ink-soft">{f.a}</p>
+              </details>
+            ))}
+          </div>
+        </Section>
+      </div>
+    </PageShell>
+  );
+}
+
+/* ---------- Kontakt ---------- */
+
+export function ContactContent({ locale, t }: { locale: Locale; t: Dictionary }) {
+  const g = t.gov;
+  const p = g.contactPage;
+  const card = "rounded-xl border border-line p-5";
+  return (
+    <PageShell locale={locale} t={t} active="contact">
+      <PageHeader locale={locale} t={t} title={g.contact} lead={p.lead} crumbs={[{ label: g.contact }]} />
+      <div className="container-page">
+        <Section title={g.contact}>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <div className={card}>
+              <div className="flex items-center gap-2 font-bold text-ink">
+                <IconPhone size={20} className="text-brand-600" /> {g.phone}
+              </div>
+              <a href={site.phoneHref} className="mt-2 block text-[18px] font-bold text-brand-700 hover:underline" dir="ltr">
+                {site.phone}
+              </a>
+              <p className="mt-1 text-[14px] text-ink-muted">{p.phoneText}</p>
+            </div>
+            <div className={card}>
+              <div className="flex items-center gap-2 font-bold text-ink">
+                <IconMail size={20} className="text-brand-600" /> {g.email}
+              </div>
+              <a href={`mailto:${site.email}`} className="mt-2 block break-all text-[16px] font-semibold text-brand-700 hover:underline" dir="ltr">
+                {site.email}
+              </a>
+              <p className="mt-1 text-[14px] text-ink-muted">{p.emailText}</p>
+            </div>
+            <div className={card}>
+              <div className="flex items-center gap-2 font-bold text-ink">
+                <IconHelp size={20} className="text-brand-600" /> {p.helpTitle}
+              </div>
+              <p className="mt-2 text-[14px] text-ink-muted">{p.helpText}</p>
+              <HelpLink className="btn-primary mt-3 !rounded-lg !px-4 !py-2.5 !text-[14px]">{p.helpCta}</HelpLink>
+            </div>
+          </div>
+        </Section>
+
+        <Section title={p.areaTitle}>
+          <dl className="overflow-hidden rounded-xl border border-line">
+            {g.servicesPage.facts.slice(1, 3).map((f, i) => (
+              <div key={f.label} className={`grid grid-cols-1 gap-1 px-4 py-3.5 sm:grid-cols-[200px_1fr] sm:gap-6 ${i ? "border-t border-line" : ""}`}>
+                <dt className="text-[14px] font-bold text-ink">{f.label}</dt>
+                <dd className="text-[15px] text-ink-soft">{f.value}</dd>
+              </div>
+            ))}
+          </dl>
+        </Section>
+      </div>
+    </PageShell>
   );
 }

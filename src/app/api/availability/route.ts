@@ -19,7 +19,8 @@ export async function GET(req: Request) {
   const from = zonedToUtc(`${year}-${pad(m)}-01`, "00:00", tz);
   const to = zonedToUtc(`${year}-${pad(m)}-${daysInMonth(year, m)}`, "23:59", tz);
   // Einen Tag Rand für Puffer über Mitternacht
-  const busy = await getCalendar().getBusy(new Date(from.getTime() - 86400000), new Date(to.getTime() + 86400000));
+  const calendar = getCalendar();
+  const busy = await calendar.getBusy(new Date(from.getTime() - 86400000), new Date(to.getTime() + 86400000));
   const days = computeMonth({ service, durationMinutes: duration, year, month: m, busy });
-  return NextResponse.json({ month, timezone: tz, days }, { headers: { "Cache-Control": "no-store" } });
+  return NextResponse.json({ month, timezone: tz, days, calendar: calendar.id === "google" ? "google" : "local" }, { headers: { "Cache-Control": "no-store" } });
 }

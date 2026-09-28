@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { Header } from "@/components/Header";
+import { Footer } from "@/components/Footer";
+import { Header, PageHeader } from "@/components/Header";
 import { VerifyBooking } from "@/components/booking/BookingDone";
 import { getDictionary, isLocale } from "@/lib/i18n";
 
@@ -16,12 +17,12 @@ export default async function VerifyPage({ params, searchParams }: { params: Pro
   const t = getDictionary(locale);
   return (
     <>
-      <Header locale={locale} t={t.nav} minimal />
-      <main className="relative min-h-[80vh] overflow-hidden pb-32">
-        <div className="container-page relative max-w-3xl pt-12">
-          <VerifyBooking t={t} locale={locale} token={token} />
-        </div>
+      <Header locale={locale} t={t} active="book" />
+      <PageHeader locale={locale} t={t} title={t.gov.book} crumbs={[{ href: `/${locale}/termin`, label: t.gov.book }, { label: "✓" }]} />
+      <main className="container-page max-w-3xl py-10">
+        <VerifyBooking t={t} locale={locale} token={token} />
       </main>
+      <Footer locale={locale} t={t} />
     </>
   );
 }

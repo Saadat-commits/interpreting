@@ -12,11 +12,13 @@ import type { AppointmentCategory, Language, Locale, PostalAddress, ServiceType 
 import { IconAlert, IconArrow, IconCalendar, IconCheck, IconFamily, IconPhone, IconPin, IconUser, IconBuilding, IconClock, IconGlobe, IconMail } from "../icons";
 import { CheckEmail, formatWhen, type PendingBooking } from "./BookingDone";
 import { CalendarPicker } from "./CalendarPicker";
-import { MountainScene } from "./MountainScene";
 import { StructuredAddress } from "./StructuredAddress";
 
 type T = Dictionary;
-type StepId = "start" | "how" | "when" | "where" | "details" | "review";
+type StepId = "anliegen" | "when" | "where" | "details" | "review";
+
+/** Nummer in der Schrittleiste (Anliegen · Termin · Ort · Ihre Daten · Prüfen) */
+const STEP_LABEL: Record<StepId, number> = { anliegen: 0, when: 1, where: 2, details: 3, review: 4 };
 type How = "onsite" | "phone" | "instant";
 
 const STORAGE_KEY = "inbg.booking.v3";
@@ -68,6 +70,7 @@ export function BookingWizard({
   initialWho?: "private" | "organisation";
 }) {
   const f = t.booking.flow;
+  const g = t.gov;
   const [who, setWho] = useState<"private" | "organisation" | null>(initialWho ?? null);
   const [how, setHow] = useState<How | null>(initialService ?? null);
   const [language, setLanguage] = useState<Language | null>(null);
@@ -118,7 +121,7 @@ export function BookingWizard({
   const billingRecipient = who === "organisation" ? orgName.trim() : `${first.trim()} ${last.trim()}`.trim();
 
   const steps: StepId[] = useMemo(() => {
-    const s: StepId[] = ["start", "how"];
+    const s: StepId[] = ["anliegen"];
     if (!instant) s.push("when");
     if (how === "onsite") s.push("where");
     s.push("details", "review");
@@ -136,14 +139,13 @@ export function BookingWizard({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [service]);
 
-  // Erster Schritt: sobald „Wer“ und „Sprache“ gewählt sind, geht es automatisch weiter
-  const pickStart = (w: typeof who, l: typeof language) => {
-    if (w) setWho(w);
-    if (l) setLanguage(l);
-    if ((w ?? who) && (l ?? language)) autoNext();
-  };
-
+  // Bei jedem Schrittwechsel an den Anfang des Formulars (nicht beim ersten Laden)
+  const firstRender = useRef(true);
   useEffect(() => {
+    if (firstRender.current) {
+      firstRender.current = false;
+      return;
+    }
     topRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [stepIndex]);
 
@@ -151,10 +153,6 @@ export function BookingWizard({
     if (advanceTimer.current) clearTimeout(advanceTimer.current);
     setDirection(delta);
     setStepIndex((i) => Math.max(0, Math.min(steps.length - 1, i + delta)));
-  };
-  const autoNext = () => {
-    if (advanceTimer.current) clearTimeout(advanceTimer.current);
-    advanceTimer.current = setTimeout(() => go(1), 380);
   };
   const jumpTo = (id: StepId) => {
     const i = steps.indexOf(id);
@@ -181,8 +179,7 @@ export function BookingWizard({
   }, [first, last, email, phone, who, orgName, clientFirst, clientLast, needsBilling, billing, t]);
 
   const valid: Record<StepId, boolean> = {
-    start: !!who && !!language,
-    how: !!how,
+    anliegen: !!who && !!how && !!language,
     when: !!start,
     where: !!place,
     details: Object.keys(errors).length === 0,
@@ -242,70 +239,54 @@ export function BookingWizard({
   const lc = intlLocale(locale);
   const fmtDuration = (m: number) => (m < 60 ? `${m.toLocaleString(lc)} ${t.common.minutes}` : `${(m / 60).toLocaleString(lc)} ${t.common.hours}`);
   const endOf = (iso: string) => new Date(new Date(iso).getTime() + duration * 60000).toISOString();
-  const progress = pending ? 1 : stepIndex / Math.max(1, steps.length - 1);
 
   /* ---------------- Zusammenfassung (live) ---------------- */
   const summary: { icon: ReactNode; label: string; value: string; step: StepId }[] = [];
-  if (who) summary.push({ icon: who === "private" ? <IconUser size={16} /> : <IconBuilding size={16} />, label: f.sumWho, value: who === "private" ? f.whoPrivate : orgName || f.whoOrg, step: "start" });
-  if (how) summary.push({ icon: how === "onsite" ? <IconPin size={16} /> : <IconPhone size={16} />, label: f.sumHow, value: f[`how_${how}`], step: "how" });
-  if (language) summary.push({ icon: <IconGlobe size={16} />, label: f.sumLang, value: t.languages[language], step: "start" });
+  if (who) summary.push({ icon: who === "private" ? <IconUser size={16} /> : <IconBuilding size={16} />, label: f.sumWho, value: who === "private" ? f.whoPrivate : orgName || f.whoOrg, step: "anliegen" });
+  if (how) summary.push({ icon: how === "onsite" ? <IconPin size={16} /> : <IconPhone size={16} />, label: f.sumHow, value: f[`how_${how}`], step: "anliegen" });
+  if (language) summary.push({ icon: <IconGlobe size={16} />, label: f.sumLang, value: t.languages[language], step: "anliegen" });
   if (start && !instant) summary.push({ icon: <IconCalendar size={16} />, label: f.sumWhen, value: formatWhen(locale, start, endOf(start)), step: "when" });
   if (place) summary.push({ icon: <IconPin size={16} />, label: f.sumWhere, value: [place.placeName, formatAddress(place)].filter(Boolean).join(", "), step: "where" });
 
   const card = (
-    <div className="rounded-[2rem] border border-line bg-white/95 p-5 shadow-deep backdrop-blur sm:p-8">
-      {/* Fortschritt */}
-      <div className="mb-7">
-        <div className="flex items-center justify-between text-[13px] font-semibold text-ink-muted">
-          <span>{f.stepOf.replace("{n}", String(stepIndex + 1)).replace("{total}", String(steps.length))}</span>
-          {stepIndex > 0 && (
-            <button type="button" onClick={() => go(-1)} className="inline-flex items-center gap-1 text-brand-700 hover:underline">
-              <IconArrow size={14} className="rotate-180" /> {t.common.back}
-            </button>
-          )}
-        </div>
-        <div className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-line">
-          <div className="h-full rounded-full bg-gradient-to-r from-brand-400 to-brand-600 transition-all duration-700 ease-out rtl:bg-gradient-to-l" style={{ width: `${((stepIndex + 1) / steps.length) * 100}%` }} />
-        </div>
-      </div>
+    <div className="rounded-xl border border-line bg-white p-5 sm:p-8">
+      {/* Schrittleiste */}
+      <Stepper labels={g.steps} current={STEP_LABEL[step]} visible={steps.map((x) => STEP_LABEL[x])} stepOf={g.stepOf} />
 
       <div key={step} className={`relative z-20 ${direction === 1 ? "animate-step-in" : "animate-step-back"}`}>
-        {/* ---------- Wer + Sprache (ein Bildschirm) ---------- */}
-        {step === "start" && (
-          <Question title={f.whoTitle} sub={f.whoSub}>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Choice active={who === "private"} icon={<IconUser size={24} />} title={f.whoPrivate} text={f.whoPrivateText} onClick={() => pickStart("private", null)} />
-              <Choice active={who === "organisation"} icon={<IconBuilding size={24} />} title={f.whoOrg} text={f.whoOrgText} onClick={() => pickStart("organisation", null)} />
-            </div>
-            <div className={`mt-7 transition-opacity duration-300 ${who ? "opacity-100" : "opacity-60"}`}>
-              <div className="mb-3 text-[17px] font-bold text-ink">{f.langTitle}</div>
+        {/* ---------- 1. Anliegen: Wer · Art · Sprache ---------- */}
+        {step === "anliegen" && (
+          <div className="space-y-8">
+            <Fieldset legend={g.whoLegend}>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Choice active={who === "private"} icon={<IconUser size={22} />} title={f.whoPrivate} text={f.whoPrivateText} onClick={() => setWho("private")} />
+                <Choice active={who === "organisation"} icon={<IconBuilding size={22} />} title={f.whoOrg} text={f.whoOrgText} onClick={() => setWho("organisation")} />
+              </div>
+            </Fieldset>
+            <Fieldset legend={g.howLegend}>
+              <div className="grid gap-3">
+                <Choice active={how === "onsite"} icon={<IconPin size={22} />} title={f.how_onsite} text={f.how_onsiteText} onClick={() => setHow("onsite")} />
+                <Choice active={how === "phone"} icon={<IconCalendar size={22} />} title={f.how_phone} text={f.how_phoneText} onClick={() => setHow("phone")} />
+                <Choice active={how === "instant"} icon={<IconPhone size={22} />} title={f.how_instant} text={f.how_instantText} onClick={() => setHow("instant")} badge={f.instantBadge} />
+              </div>
+            </Fieldset>
+            <Fieldset legend={g.langLegend}>
               <div className="grid grid-cols-3 gap-2.5">
                 {(["dari", "farsi", "pashto"] as const).map((l) => (
                   <button
                     key={l}
                     type="button"
-                    onClick={() => pickStart(null, l)}
+                    onClick={() => setLanguage(l)}
                     aria-pressed={language === l}
-                    className={`flex flex-col items-center gap-0.5 rounded-2xl border-2 px-2 py-3.5 transition ${language === l ? "border-brand-600 bg-brand-50/60 shadow-soft" : "border-line bg-white hover:border-brand-200"}`}
+                    className={`flex flex-col items-center gap-0.5 rounded-xl border-2 px-2 py-3 transition ${language === l ? "border-brand-600 bg-brand-50/60" : "border-line bg-white hover:border-brand-200"}`}
                   >
                     <span className="font-fa text-lg font-bold text-brand-700">{t.languagesNative[l]}</span>
                     <span className="text-[13px] font-semibold text-ink-soft">{t.languages[l]}</span>
                   </button>
                 ))}
               </div>
-            </div>
-          </Question>
-        )}
-
-        {/* ---------- Wie? ---------- */}
-        {step === "how" && (
-          <Question title={f.howTitle}>
-            <div className="grid gap-3">
-              <Choice active={how === "onsite"} icon={<IconPin size={24} />} title={f.how_onsite} text={f.how_onsiteText} onClick={() => (setHow("onsite"), autoNext())} />
-              <Choice active={how === "phone"} icon={<IconCalendar size={24} />} title={f.how_phone} text={f.how_phoneText} onClick={() => (setHow("phone"), autoNext())} />
-              <Choice active={how === "instant"} icon={<IconPhone size={24} />} title={f.how_instant} text={f.how_instantText} onClick={() => (setHow("instant"), autoNext())} badge={f.instantBadge} />
-            </div>
-          </Question>
+            </Fieldset>
+          </div>
         )}
 
         {/* ---------- Wann? ---------- */}
@@ -342,7 +323,6 @@ export function BookingWizard({
               onSelect={(x) => {
                 setStart(x);
                 setSlotError(false);
-                if (x) autoNext();
               }}
               t={t.booking.calendar}
               locale={locale}
@@ -423,7 +403,7 @@ export function BookingWizard({
               {summary.map((s) => (
                 <ReviewRow key={s.label} icon={s.icon} label={s.label} value={s.value} onEdit={() => jumpTo(s.step)} edit={t.common.edit} />
               ))}
-              {instant && <ReviewRow icon={<IconPhone size={16} />} label={f.sumWhen} value={f.instantNow} onEdit={() => jumpTo("how")} edit={t.common.edit} />}
+              {instant && <ReviewRow icon={<IconPhone size={16} />} label={f.sumWhen} value={f.instantNow} onEdit={() => jumpTo("anliegen")} edit={t.common.edit} />}
               <ReviewRow
                 icon={<IconMail size={16} />}
                 label={who === "organisation" ? f.caseWorker : f.sumContact}
@@ -468,50 +448,45 @@ export function BookingWizard({
       </div>
 
       {/* Aktion */}
-      {!["start", "how"].includes(step) && (
-        <div className="mt-8 border-t border-line pt-6">
-          {step === "review" ? (
-            <button type="button" className="btn-primary w-full !py-4 !text-base" onClick={submit} disabled={submitting}>
-              {submitting ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" /> : <IconCheck size={18} strokeWidth={2.4} />}
-              {submitting ? t.booking.review.submitting : f.confirm}
-            </button>
-          ) : (
-            <button
-              type="button"
-              className="btn-primary w-full !py-4 !text-base"
-              disabled={!valid[step]}
-              onClick={() => {
-                if (step === "details" && !valid.details) return;
-                go(1);
-              }}
-            >
-              {f.continue} <IconArrow size={18} />
-            </button>
-          )}
-        </div>
-      )}
+      <div className="mt-8 flex items-center justify-between gap-3 border-t border-line pt-6">
+        {stepIndex > 0 ? (
+          <button type="button" onClick={() => go(-1)} className="btn-ghost !rounded-lg !px-5 !py-3">
+            <IconArrow size={17} className="rotate-180 rtl:rotate-0" /> {g.back}
+          </button>
+        ) : (
+          <span />
+        )}
+        {step === "review" ? (
+          <button type="button" className="btn-primary !rounded-lg !px-6 !py-3.5" onClick={submit} disabled={submitting}>
+            {submitting ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" /> : <IconCheck size={18} strokeWidth={2.4} />}
+            {submitting ? t.booking.review.submitting : f.confirm}
+          </button>
+        ) : (
+          <button
+            type="button"
+            className="btn-primary !rounded-lg !px-6 !py-3.5"
+            disabled={!valid[step]}
+            onClick={() => {
+              if (step === "details") setTouched({ first: true, last: true, email: true, phone: true, orgName: true, clientFirst: true, clientLast: true });
+              if (valid[step]) go(1);
+            }}
+          >
+            {g.next} <IconArrow size={17} className="rtl:rotate-180" />
+          </button>
+        )}
+      </div>
     </div>
   );
 
   return (
-    <div ref={topRef} className="scroll-mt-24">
-      {/* 3D-Berge: die Kamera wandert mit jedem Schritt weiter */}
-      <div className="relative left-1/2 w-screen -translate-x-1/2">
-        <MountainScene progress={progress} className="h-[230px] w-full sm:h-[340px]" />
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-b from-transparent to-white" />
-        <div className="pointer-events-none absolute inset-x-0 top-4 px-5 text-center sm:top-8">
-          <h1 className="text-3xl font-bold text-ink drop-shadow-[0_2px_12px_rgba(255,255,255,.9)] sm:text-5xl">{t.booking.title}</h1>
-          <p className="mt-2 hidden text-lg font-medium text-ink-soft drop-shadow-[0_1px_8px_rgba(255,255,255,.95)] sm:block">{f.heroSub}</p>
-        </div>
-      </div>
-
-      <div className="relative z-10 -mt-14 grid grid-cols-1 gap-6 sm:-mt-20 lg:grid-cols-[minmax(0,1fr)_300px]">
+    <div ref={topRef} className="scroll-mt-4 pt-8">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
         {pending ? <CheckEmail t={t} locale={locale} pending={pending} onChangeEmail={() => (setPending(null), jumpTo("details"))} /> : card}
 
         {/* Live-Übersicht wie beim Online-Checkout */}
         {!pending && (
           <aside className="hidden lg:block">
-            <div className="sticky top-24 rounded-3xl border border-line bg-white p-5 shadow-soft">
+            <div className="sticky top-6 rounded-xl border border-line bg-[#F6F9F7] p-5">
               <div className="text-sm font-bold text-ink">{f.summary}</div>
               {summary.length === 0 ? (
                 <p className="mt-3 text-sm text-ink-muted">{f.summaryEmpty}</p>
@@ -543,6 +518,55 @@ export function BookingWizard({
 }
 
 /* ================= Bausteine ================= */
+
+/** Nummerierte Schrittleiste wie bei Online-Formularen von Behörden */
+function Stepper({ labels, current, visible, stepOf }: { labels: string[]; current: number; visible: number[]; stepOf: string }) {
+  const pos = visible.indexOf(current);
+  return (
+    <div className="mb-8">
+      {/* Mobil: kurze Zeile */}
+      <div className="sm:hidden">
+        <div className="text-[13px] font-semibold text-ink-muted">{stepOf.replace("{n}", String(pos + 1)).replace("{total}", String(visible.length))}</div>
+        <div className="mt-1 text-[17px] font-bold text-ink">{labels[current]}</div>
+        <div className="mt-3 flex gap-1.5">
+          {visible.map((v, i) => (
+            <span key={v} className={`h-1.5 flex-1 rounded-full ${i <= pos ? "bg-brand-600" : "bg-line"}`} />
+          ))}
+        </div>
+      </div>
+      {/* Desktop: alle Schritte mit Nummer */}
+      <ol className="hidden items-center sm:flex">
+        {visible.map((v, i) => {
+          const done = i < pos;
+          const here = i === pos;
+          return (
+            <li key={v} className="flex flex-1 items-center gap-2 last:flex-none">
+              <span
+                className={`grid h-8 w-8 shrink-0 place-items-center rounded-full text-[14px] font-bold ${
+                  here ? "bg-brand-600 text-white ring-4 ring-brand-100" : done ? "bg-brand-600 text-white" : "border-2 border-line bg-white text-ink-muted"
+                }`}
+                aria-current={here ? "step" : undefined}
+              >
+                {done ? <IconCheck size={15} strokeWidth={3} /> : i + 1}
+              </span>
+              <span className={`whitespace-nowrap text-[14px] ${here ? "font-bold text-ink" : done ? "font-semibold text-ink-soft" : "text-ink-muted"}`}>{labels[v]}</span>
+              {i < visible.length - 1 && <span className={`mx-2 h-0.5 flex-1 rounded ${done ? "bg-brand-600" : "bg-line"}`} />}
+            </li>
+          );
+        })}
+      </ol>
+    </div>
+  );
+}
+
+function Fieldset({ legend, children }: { legend: string; children: ReactNode }) {
+  return (
+    <fieldset>
+      <legend className="mb-3 text-[17px] font-bold text-ink">{legend}</legend>
+      {children}
+    </fieldset>
+  );
+}
 
 const fillName = (s: string, name: string) => s.replace("{name}", name || "—");
 

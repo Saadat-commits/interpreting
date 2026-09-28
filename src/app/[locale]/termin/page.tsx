@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { Header } from "@/components/Header";
+import { Footer } from "@/components/Footer";
+import { Header, PageHeader } from "@/components/Header";
 import { BookingWizard } from "@/components/booking/BookingWizard";
 import { getDictionary, isLocale } from "@/lib/i18n";
 import type { AppointmentCategory } from "@/lib/types";
@@ -28,12 +29,14 @@ export default async function BookingPage({
   const category = anlass && anlass in t.categories ? (anlass as AppointmentCategory) : undefined;
   return (
     <>
-      <Header locale={locale} t={t.nav} minimal />
-      <main className="relative min-h-[80vh] overflow-x-clip pb-32">
-        <div className="container-page relative max-w-6xl">
+      <Header locale={locale} t={t} active="book" />
+      <PageHeader locale={locale} t={t} title={t.gov.book} lead={t.booking.subtitle} crumbs={[{ label: t.gov.book }]} />
+      <main className="pb-10">
+        <div className="container-page">
           <BookingWizard locale={locale} t={t} initialService={initial} initialCategory={category} initialWho={wer === "einrichtung" ? "organisation" : wer === "privat" ? "private" : undefined} />
         </div>
       </main>
+      <Footer locale={locale} t={t} />
     </>
   );
 }
