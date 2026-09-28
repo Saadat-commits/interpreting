@@ -48,7 +48,14 @@ class CompositeCalendar implements CalendarProvider {
     this.id = remote ? remote.id : local.id;
   }
   async getBusy(from: Date, to: Date) {
-    const [a, b] = await Promise.all([this.local.getBusy(from, to), this.remote?.getBusy(from, to) ?? []]);
+    const remote = this.remote
+      ? this.remote.getBusy(from, to).catch((e) => {
+          // Google nicht erreichbar → nur eigene Buchungen berücksichtigen, Website bleibt nutzbar
+          console.error("[calendar:busy]", e);
+          return [];
+        })
+      : Promise.resolve([]);
+    const [a, b] = await Promise.all([this.local.getBusy(from, to), remote]);
     return [...a, ...b];
   }
   async createEvent(booking: Booking) {

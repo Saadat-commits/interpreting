@@ -50,6 +50,25 @@ Die Domain liegt bei Squarespace (ehemals Google Domains), E-Mail läuft über G
    - Google-Workspace-Einträge (MX, TXT) **unverändert lassen**.
 5. Nach einigen Minuten bis Stunden ist die Seite unter der Domain erreichbar (HTTPS richtet Vercel automatisch ein).
 
+## Google: E-Mails und Kalender automatisch
+
+**E-Mails (Bestätigung + Rechnung) über Ihr Google-Workspace-Postfach**
+1. myaccount.google.com → *Sicherheit* → Bestätigung in zwei Schritten aktivieren.
+2. *App-Passwörter* → neues Passwort „Website“ erstellen.
+3. Bei Vercel eintragen: `SMTP_HOST=smtp.gmail.com`, `SMTP_PORT=465`, `SMTP_SECURE=true`,
+   `SMTP_USER=saadat@interpreting-nbg.de`, `SMTP_PASS=<App-Passwort>`, `OWNER_EMAIL=saadat@interpreting-nbg.de`.
+
+**Google Kalender (belegte Zeiten sperren + Buchungen automatisch eintragen)**
+1. console.cloud.google.com → neues Projekt → *Google Calendar API* aktivieren.
+2. *IAM & Verwaltung → Dienstkonten* → Dienstkonto anlegen → *Schlüssel → JSON* herunterladen.
+3. In Google Kalender: *Einstellungen → saadat@interpreting-nbg.de → Für bestimmte Personen freigeben* →
+   Adresse des Dienstkontos hinzufügen, Berechtigung „Änderungen an Terminen vornehmen“.
+4. Bei Vercel eintragen: `GOOGLE_CALENDAR_ID=saadat@interpreting-nbg.de`,
+   `GOOGLE_SERVICE_ACCOUNT_EMAIL=<client_email aus der JSON-Datei>`, `GOOGLE_SERVICE_ACCOUNT_KEY=<private_key aus der JSON-Datei>`.
+
+Danach gilt: Private Termine im Kalender sind auf der Website automatisch nicht buchbar, und jede bestätigte
+Buchung erscheint mit Adresse, Kontakt und Hinweisen im Kalender (grün markiert, mit Erinnerung).
+
 ## Vor dem Livegang anpassen
 
 - `src/config/site.ts` – Name, Anschrift, Telefon, E-Mail, Steuernummer, Bankverbindung (alle `TODO`).
