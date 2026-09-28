@@ -53,8 +53,9 @@ export const bookingRequestSchema = z
   .superRefine((v, ctx) => {
     if (v.service === "onsite" && !v.onsite) ctx.addIssue({ code: "custom", path: ["onsite"], message: "required" });
     if (v.service === "phone" && !v.phoneSession) ctx.addIssue({ code: "custom", path: ["phoneSession"], message: "required" });
-    const sameOk = v.service === "onsite" && v.billingSameAsAppointment;
-    if (!sameOk && !v.billingAddress) ctx.addIssue({ code: "custom", path: ["billingAddress"], message: "required" });
+    // Vor Ort mit abweichender Rechnungsadresse → Adresse nötig; telefonisch ist sie freiwillig
+    if (v.service === "onsite" && !v.billingSameAsAppointment && !v.billingAddress)
+      ctx.addIssue({ code: "custom", path: ["billingAddress"], message: "required" });
   });
 
 export type BookingRequest = z.infer<typeof bookingRequestSchema>;

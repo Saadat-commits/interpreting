@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { addressProblems, formatAddress, parseFreeAddress } from "@/lib/address";
+import { cityForPostalCode } from "@/lib/postal";
 import type { Dictionary } from "@/lib/i18n";
 import type { Locale, PostalAddress } from "@/lib/types";
 import { IconAlert, IconCheck, IconPin, IconSearch } from "../icons";
@@ -31,6 +32,8 @@ export function AddressField({
   t,
   locale,
   autoFocus,
+  quickPlaces,
+  quickLabel,
 }: {
   label: string;
   placeholder: string;
@@ -39,6 +42,9 @@ export function AddressField({
   t: T;
   locale: Locale;
   autoFocus?: boolean;
+  /** Häufige Orte, die mit einem Tipp übernommen werden */
+  quickPlaces?: PostalAddress[];
+  quickLabel?: string;
 }) {
   const id = useId();
   const listId = `${id}-list`;
@@ -93,6 +99,7 @@ export function AddressField({
   const typed = useMemo<Suggestion | null>(() => {
     const p = parseFreeAddress(query);
     if (!p) return null;
+    if (!p.city && p.postalCode) p.city = cityForPostalCode(p.postalCode) ?? "";
     const a: PostalAddress = { ...p, country: "DE", label: "", source: "manual" };
     if (addressProblems(a).length) return null;
     a.label = formatAddress(a);
@@ -119,6 +126,7 @@ export function AddressField({
       return;
     }
     const p = parseFreeAddress(query);
+    if (p && !p.city && p.postalCode) p.city = cityForPostalCode(p.postalCode) ?? "";
     if (p && (p.street || p.postalCode) && query.trim().length >= 5) {
       setManual({ ...p, placeName: undefined });
       setManualTouched({});
@@ -366,6 +374,23 @@ export function AddressField({
       )}
       </div>
 
+      {quickPlaces && quickPlaces.length > 0 && !query.trim() && (
+        <div className="mt-3">
+          {quickLabel && <div className="mb-2 text-[13px] font-semibold text-ink-muted">{quickLabel}</div>}
+          <div className="flex flex-wrap gap-2" dir="ltr">
+            {quickPlaces.map((qp) => (
+              <button
+                key={qp.label}
+                type="button"
+                onClick={() => onChange(qp)}
+                className="inline-flex items-center gap-1.5 rounded-full border border-brand-200 bg-white px-3.5 py-2 text-[13px] font-semibold text-brand-800 transition hover:-translate-y-0.5 hover:border-brand-400 hover:shadow-soft"
+              >
+                <IconPin size={14} className="text-brand-600" /> {qp.placeName}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
       <p className={`mt-2 flex items-start gap-1.5 text-[13px] leading-relaxed ${showHint ? "text-brand-800" : "text-ink-muted"}`}>
         {showHint && <IconAlert size={15} className="mt-0.5 shrink-0 text-brand-600" />}
         {t.hint}

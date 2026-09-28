@@ -148,6 +148,8 @@ export const fa: Dictionary = {
     },
     calendar: {
       title: "یک زمان آزاد انتخاب کنید",
+      nextFree: "نزدیک‌ترین زمان آزاد",
+      take: "انتخاب",
       legendFree: "آزاد",
       legendBusy: "پر",
       pickDay: "لطفاً ابتدا یک روز انتخاب کنید.",
@@ -249,6 +251,8 @@ export const fa: Dictionary = {
       pickFirst: "بالا «تلفنی» یا «همراهی حضوری» را انتخاب کنید – سپس زمان‌های آزاد نمایش داده می‌شوند.",
       next: "ادامه",
       hint1: "نوع خدمت، زبان و یک زمان آزاد را انتخاب کنید.",
+      quickPlaces: "مکان‌های پرکاربرد – فقط بزنید:",
+      didYouMean: "منظورتان این است؟",
       addressOnsite: "آدرس محل قرار",
       addressPhone: "آدرس شما (برای صورت‌حساب)",
       name: "نام شما",

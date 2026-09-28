@@ -96,7 +96,36 @@ export function CalendarPicker({
     new Intl.DateTimeFormat(lc, { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" }).format(new Date(`${key}T12:00:00Z`));
   const fmtTime = (time: string) => (locale === "fa" ? time.replace(/\d/g, (d) => "۰۱۲۳۴۵۶۷۸۹"[Number(d)]) : time);
 
+  // Schnellste Option: der nächste freie Termin mit einem Tipp
+  const nextFree = useMemo(() => {
+    for (const d of days ?? []) {
+      const slot = d.slots.find((x) => x.available);
+      if (slot) return { day: d.date, slot };
+    }
+    return null;
+  }, [days]);
+
   return (
+    <div>
+    {nextFree && !selected && (
+      <button
+        type="button"
+        onClick={() => (setDay(nextFree.day), onSelect(nextFree.slot.start))}
+        className="group mb-4 flex w-full items-center gap-3 rounded-2xl border border-brand-200 bg-white px-4 py-3.5 text-start shadow-soft transition hover:-translate-y-0.5 hover:border-brand-400 hover:shadow-lift"
+      >
+        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand-600 text-white">
+          <IconClock size={20} />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-[13px] font-semibold text-brand-700">{t.nextFree}</span>
+          <span className="block text-[15px] font-bold text-ink">
+            {fmtDay(nextFree.day)} · {fmtTime(nextFree.slot.time)}
+          </span>
+        </span>
+        <span className="hidden shrink-0 rounded-full bg-brand-600 px-3.5 py-1.5 text-sm font-semibold text-white transition group-hover:bg-brand-700 sm:inline">{t.take}</span>
+        <IconChevron size={20} className="shrink-0 text-brand-600 sm:hidden rtl:rotate-180" />
+      </button>
+    )}
     <div className="grid gap-6 lg:grid-cols-[1.15fr_1fr]">
       {/* Monatsansicht */}
       <div className="rounded-3xl border border-line bg-white p-5 shadow-soft sm:p-6">
@@ -252,6 +281,7 @@ export function CalendarPicker({
           <div className="grid h-full min-h-[200px] place-items-center text-center text-sm text-ink-muted">{days ? t.pickDay : ""}</div>
         )}
       </div>
+    </div>
     </div>
   );
 }

@@ -51,7 +51,7 @@ export async function createBooking(req: BookingRequest, baseUrl: string): Promi
   const store = getStore();
   const now = new Date().toISOString();
   const token = newToken();
-  const billing = req.service === "onsite" && req.billingSameAsAppointment ? req.onsite!.address : req.billingAddress!;
+  const billing = req.service === "onsite" && req.billingSameAsAppointment ? req.onsite!.address : req.billingAddress;
 
   const booking = await store.createBooking(
     (seq) => ({

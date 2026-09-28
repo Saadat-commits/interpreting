@@ -146,6 +146,8 @@ export const de = {
     },
     calendar: {
       title: "Wählen Sie einen freien Termin",
+      nextFree: "Nächster freier Termin",
+      take: "Übernehmen",
       legendFree: "verfügbar",
       legendBusy: "nicht verfügbar",
       pickDay: "Bitte zuerst einen Tag wählen.",
@@ -247,6 +249,8 @@ export const de = {
       pickFirst: "Wählen Sie oben „Telefonisch“ oder „Vor-Ort-Begleitung“ – dann erscheinen die freien Termine.",
       next: "Weiter",
       hint1: "Wählen Sie Art, Sprache und eine freie Zeit.",
+      quickPlaces: "Häufige Orte – einfach antippen:",
+      didYouMean: "Meinten Sie",
       addressOnsite: "Adresse des Termins",
       addressPhone: "Ihre Adresse (für die Rechnung)",
       name: "Ihr Name",

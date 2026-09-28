@@ -28,3 +28,21 @@ describe("parseFreeAddress", () => {
     expect(parseFreeAddress("Am Plärrer 7 90443 Nürnberg")).toEqual({ street: "Am Plärrer", houseNumber: "7", postalCode: "90443", city: "Nürnberg" }));
   it("ohne PLZ unvollständig", () => expect(parseFreeAddress("Luisenstraße 3")?.postalCode).toBe(""));
 });
+
+import { cityForPostalCode } from "./postal";
+import { suggestEmail } from "./email-typo";
+
+describe("Hilfen", () => {
+  it("PLZ → Ort", () => {
+    expect(cityForPostalCode("90762")).toBe("Fürth");
+    expect(cityForPostalCode("90443")).toBe("Nürnberg");
+    expect(cityForPostalCode("99999")).toBeNull();
+  });
+  it("E-Mail-Tippfehler", () => {
+    expect(suggestEmail("petra@gmial.com")).toBe("petra@gmail.com");
+    expect(suggestEmail("petra@gmx.dee")).toBe("petra@gmx.de");
+    expect(suggestEmail("petra@web,de")).toBe("petra@web.de");
+    expect(suggestEmail("petra@gmail.com")).toBeNull();
+    expect(suggestEmail("info@jugendamt-nuernberg.de")).toBeNull();
+  });
+});

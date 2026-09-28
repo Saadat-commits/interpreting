@@ -5,6 +5,8 @@ import { availabilityConfig } from "@/config/availability";
 import { site } from "@/config/site";
 import { detectCategory, isValidAddress } from "@/lib/address";
 import { emailRe, isPhone } from "@/lib/validators";
+import { suggestEmail } from "@/lib/email-typo";
+import { commonPlaces } from "@/config/places";
 import type { Dictionary } from "@/lib/i18n";
 import { intlLocale } from "@/lib/i18n";
 import type { AppointmentCategory, Language, Locale, PostalAddress, ServiceType } from "@/lib/types";
@@ -89,12 +91,6 @@ export function BookingWizard({
     if (r.billingAddress && isValidAddress(r.billingAddress)) setBillingAddress(r.billingAddress);
   }, []);
 
-  // Telefonisch: gespeicherte Adresse direkt als Rechnungsadresse nutzen
-  useEffect(() => {
-    if (service === "phone" && !address && billingAddress) setAddress(billingAddress);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [service]);
-
   useEffect(() => {
     if (!service) return;
     const options = availabilityConfig.durations[service];
@@ -110,7 +106,7 @@ export function BookingWizard({
   /* ---------------- Prüfung ---------------- */
   const errors = useMemo(() => {
     const e: Record<string, string> = {};
-    if (!isValidAddress(address)) e.address = t.booking.addressField.missing;
+    if (service === "onsite" && !isValidAddress(address)) e.address = t.booking.addressField.missing;
     if (service === "onsite" && !billingSame && !isValidAddress(billingAddress)) e.billing = t.booking.addressField.missing;
     if (contact.name.trim().length < 2) e.name = t.booking.errors.name;
     if (!emailRe.test(contact.email.trim())) e.email = t.booking.errors.email;
@@ -119,17 +115,18 @@ export function BookingWizard({
   }, [address, service, billingSame, billingAddress, contact, t]);
 
   const step1Valid = !!service && !!language && !!start;
+  const emailSuggestion = suggestEmail(contact.email);
   const step2Valid = Object.keys(errors).length === 0;
   const err = (k: string) => (touched[k] ? errors[k] : undefined);
   const touch = (k: string) => () => setTouched((x) => ({ ...x, [k]: true }));
 
   /* ---------------- Absenden ---------------- */
   const submit = async () => {
-    if (!step2Valid || !service || !language || !start || !address) return;
+    if (!step2Valid || !service || !language || !start) return;
     setSubmitting(true);
     setSubmitError(null);
     const onsite = service === "onsite";
-    const category: AppointmentCategory = detectCategory(address.placeName) ?? initialCategory ?? "other";
+    const category: AppointmentCategory = (onsite ? detectCategory(address?.placeName) : null) ?? initialCategory ?? "other";
     const payload = {
       locale,
       service,
@@ -138,11 +135,11 @@ export function BookingWizard({
       durationMinutes: duration,
       start,
       clientName: contact.name.trim(),
-      onsite: onsite ? { address, institution: address.placeName || undefined } : undefined,
+      onsite: onsite && address ? { address, institution: address.placeName || undefined } : undefined,
       phoneSession: onsite ? undefined : { callNumber: contact.phone.trim() },
       contact: { name: contact.name.trim(), email: contact.email.trim(), phone: contact.phone.trim() },
       billingSameAsAppointment: onsite && billingSame,
-      billingAddress: onsite ? (billingSame ? undefined : billingAddress) : address,
+      billingAddress: onsite && !billingSame ? billingAddress : undefined,
       notes: notes.trim() || undefined,
       acceptTerms: true,
       website: honeypot,
@@ -160,7 +157,7 @@ export function BookingWizard({
       setPending(await res.json());
       writeRemembered({
         contact: { ...contact },
-        billingAddress: onsite ? (billingSame ? address : billingAddress) : address,
+        billingAddress: onsite ? (billingSame ? address : billingAddress) : billingAddress,
         language,
       });
       setStep(2);
@@ -198,7 +195,7 @@ export function BookingWizard({
                       type="button"
                       onClick={() => setService(k)}
                       aria-pressed={active}
-                      className={`flex items-center gap-3 rounded-2xl border p-4 text-start transition-all duration-300 sm:p-5 ${
+                      className={`flex flex-col items-center gap-2.5 rounded-2xl border p-4 text-center transition-all duration-300 sm:flex-row sm:gap-3 sm:p-5 sm:text-start ${
                         active ? "border-brand-500 bg-white shadow-[0_0_0_4px_rgba(44,138,93,.14)]" : "border-line bg-white hover:-translate-y-0.5 hover:border-brand-200 hover:shadow-soft"
                       }`}
                     >
@@ -218,7 +215,7 @@ export function BookingWizard({
             <Block label={s.language}>
               <div className="flex flex-wrap gap-2.5">
                 {(["dari", "farsi", "pashto"] as const).map((l) => (
-                  <Chip key={l} active={language === l} onClick={() => setLanguage(l)}>
+                  <Chip key={l} active={language === l} onClick={() => (setLanguage(l), start && service && setTimeout(() => setStep(1), 450))}>
                     {t.languages[l]}
                   </Chip>
                 ))}
@@ -256,7 +253,12 @@ export function BookingWizard({
                   service={service}
                   duration={duration}
                   selected={start}
-                  onSelect={(x) => (setStart(x), setSlotError(false))}
+                  onSelect={(x) => {
+                    setStart(x);
+                    setSlotError(false);
+                    // Automatisch weiter, sobald alles gewählt ist
+                    if (x && language) setTimeout(() => setStep(1), 450);
+                  }}
                   t={t.booking.calendar}
                   locale={locale}
                   refreshKey={calendarRefresh}
@@ -288,14 +290,17 @@ export function BookingWizard({
               <span className="text-sm font-semibold text-brand-700">{t.common.edit}</span>
             </button>
 
+            {service === "onsite" && (
             <div>
               <AddressField
-                label={service === "onsite" ? s.addressOnsite : s.addressPhone}
+                label={s.addressOnsite}
                 placeholder={t.booking.details.addressPlaceholder}
                 value={address}
                 onChange={setAddress}
                 t={t.booking.addressField}
                 locale={locale}
+                quickPlaces={commonPlaces}
+                quickLabel={s.quickPlaces}
               />
               {service === "onsite" && (
                 <label className="mt-4 flex cursor-pointer items-center gap-3">
@@ -319,6 +324,7 @@ export function BookingWizard({
                 </div>
               )}
             </div>
+            )}
 
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
               <Field label={s.name} error={err("name")}>
@@ -326,6 +332,15 @@ export function BookingWizard({
               </Field>
               <Field label={s.email} error={err("email")}>
                 <input className={`field ${err("email") ? "field-invalid" : ""}`} value={contact.email} onChange={(e) => setContact({ ...contact, email: e.target.value })} onBlur={touch("email")} type="email" inputMode="email" autoComplete="email" dir="ltr" />
+                {emailSuggestion && (
+                  <button
+                    type="button"
+                    onClick={() => setContact({ ...contact, email: emailSuggestion })}
+                    className="mt-2 inline-flex flex-wrap items-center gap-1.5 rounded-full border border-brand-200 bg-white px-3 py-1.5 text-[13px] text-ink-soft hover:border-brand-400"
+                  >
+                    {s.didYouMean} <b className="text-brand-700" dir="ltr">{emailSuggestion}</b>
+                  </button>
+                )}
               </Field>
               <Field label={s.phone} error={err("phone")}>
                 <input className={`field ${err("phone") ? "field-invalid" : ""}`} value={contact.phone} onChange={(e) => setContact({ ...contact, phone: e.target.value })} onBlur={touch("phone")} type="tel" inputMode="tel" autoComplete="tel" dir="ltr" placeholder="0911 …" />

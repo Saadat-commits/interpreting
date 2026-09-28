@@ -73,7 +73,11 @@ export async function renderInvoicePdf(invoice: Invoice, booking: Booking): Prom
   roundRect(page, M, y - cardH, colW, cardH, 12, { stroke: C.line });
   label("Rechnung an", M + 16, y - 20);
   const a = invoice.recipient.address;
-  const recipient = [invoice.recipient.organisation, invoice.recipient.name, `${a.street} ${a.houseNumber}`, `${a.postalCode} ${a.city}`].filter(Boolean) as string[];
+  const recipient = [
+    invoice.recipient.organisation,
+    invoice.recipient.name,
+    ...(a ? [`${a.street} ${a.houseNumber}`, `${a.postalCode} ${a.city}`] : [invoice.recipient.email]),
+  ].filter(Boolean) as string[];
   recipient.slice(0, 4).forEach((l, i) => text(page, i === 0 ? S : R, l, M + 16, y - 34 - i * 12, 9.5));
 
   const mx = M + colW + 16;

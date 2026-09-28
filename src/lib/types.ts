@@ -113,7 +113,8 @@ export interface Booking {
 
   contact: ContactPerson;
   billingSameAsAppointment: boolean;
-  billingAddress: PostalAddress;
+  /** Bei telefonischen Terminen optional (Rechnung dann an Name + E-Mail) */
+  billingAddress?: PostalAddress;
   notes?: string;
 
   invoiceId?: string;
@@ -149,7 +150,7 @@ export interface Invoice {
   issueDate: string; // YYYY-MM-DD
   serviceDate: string; // YYYY-MM-DD
   dueDate: string; // YYYY-MM-DD
-  recipient: { name: string; organisation?: string; address: PostalAddress; email: string };
+  recipient: { name: string; organisation?: string; address?: PostalAddress; email: string };
   lines: InvoiceLine[];
   netCents: number;
   vatRate: number; // 0.19 oder 0 (Kleinunternehmer)
