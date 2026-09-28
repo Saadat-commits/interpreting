@@ -46,8 +46,8 @@ export function HeroVisual({ t, locale }: { t: Dictionary["hero"]; locale: "de" 
         <svg viewBox="0 0 400 420" className="absolute inset-x-[4%] top-0 h-[96%] w-[92%] drop-shadow-[0_30px_40px_rgba(16,40,28,.16)]" aria-hidden="true">
           <defs>
             <linearGradient id="hv-bg" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0" stopColor="#D9EEE1" />
-              <stop offset=".55" stopColor="#EFF7F2" />
+              <stop offset="0" stopColor="#FFFFFF" />
+              <stop offset=".55" stopColor="#FFFFFF" />
               <stop offset="1" stopColor="#FFFFFF" />
             </linearGradient>
             <linearGradient id="hv-g" x1="0" y1="0" x2="0" y2="1">
@@ -58,11 +58,11 @@ export function HeroVisual({ t, locale }: { t: Dictionary["hero"]; locale: "de" 
               <path d="M30 420 V190 C30 105 110 45 200 10 C290 45 370 105 370 190 V420 Z" />
             </clipPath>
             <pattern id="hv-girih" width="48" height="48" patternUnits="userSpaceOnUse">
-              <path d={starPath(24, 24, 13, 0.64)} fill="none" stroke="#1F7049" strokeOpacity=".09" />
+              <path d={starPath(24, 24, 13, 0.64)} fill="none" stroke="#1F7049" strokeOpacity=".13" />
             </pattern>
           </defs>
           <path d="M14 420 V186 C14 96 102 30 200 -6 C298 30 386 96 386 186 V420" fill="none" stroke="#B3DCC3" strokeOpacity=".7" />
-          <path d="M30 420 V190 C30 105 110 45 200 10 C290 45 370 105 370 190 V420 Z" fill="url(#hv-bg)" />
+          <path d="M30 420 V190 C30 105 110 45 200 10 C290 45 370 105 370 190 V420 Z" fill="#fff" stroke="#82C29E" strokeWidth="1.5" />
           <g clipPath="url(#hv-clip)">
             <rect width="400" height="420" fill="url(#hv-girih)" />
             <path d={starPath(200, 150, 118, 0.7)} fill="url(#hv-g)" stroke="#2C8A5D" strokeOpacity=".22" strokeWidth="1.2" />

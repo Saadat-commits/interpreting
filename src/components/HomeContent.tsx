@@ -7,6 +7,7 @@ import { Reveal } from "@/components/Reveal";
 import { ArchArtwork } from "@/components/ArchArtwork";
 import { cultureScenes, type CultureKey } from "@/components/CultureScenes";
 import { Tilt3D } from "@/components/Tilt3D";
+import { Ornament } from "@/components/Ornament";
 import {
   IconArrow,
   IconBridge,
@@ -33,7 +34,6 @@ export function HomeContent({ locale, t }: { locale: Locale; t: Dictionary }) {
         {/* ---------- Hero ---------- */}
         <section className="relative overflow-hidden">
           <div className="bg-dots pointer-events-none absolute inset-0 mask-radial opacity-70" aria-hidden="true" />
-          <div className="pointer-events-none absolute -top-40 end-[-10%] h-[520px] w-[520px] rounded-full bg-brand-100/50 blur-3xl" aria-hidden="true" />
           <div className="container-page relative grid items-center gap-14 pb-20 pt-10 md:pt-16 lg:grid-cols-[1.05fr_1fr] lg:pb-28">
             <div>
               <div className="eyebrow animate-fade-up">
@@ -77,6 +77,8 @@ export function HomeContent({ locale, t }: { locale: Locale; t: Dictionary }) {
             </div>
           </div>
         </section>
+
+        <Ornament />
 
         {/* ---------- Leistungen ---------- */}
         <section id="leistungen" className="scroll-mt-24 py-20 lg:py-28">
@@ -131,7 +133,6 @@ export function HomeContent({ locale, t }: { locale: Locale; t: Dictionary }) {
         {/* ---------- Einsatzorte ---------- */}
         <section className="relative overflow-hidden bg-paper py-20 lg:py-28">
           <div className="bg-girih pointer-events-none absolute inset-0 opacity-70" aria-hidden="true" />
-          <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-paper via-paper/40 to-paper" aria-hidden="true" />
           <div className="container-page relative">
             <Reveal className="mx-auto max-w-2xl text-center">
               <div className="eyebrow">{t.settings.eyebrow}</div>
@@ -163,6 +164,8 @@ export function HomeContent({ locale, t }: { locale: Locale; t: Dictionary }) {
             </div>
           </div>
         </section>
+
+        <Ornament />
 
         {/* ---------- Zwei Kulturen ---------- */}
         <section className="relative overflow-hidden py-20 lg:py-28">
@@ -197,8 +200,23 @@ export function HomeContent({ locale, t }: { locale: Locale; t: Dictionary }) {
                 );
               })}
             </div>
+            <Reveal className="mx-auto mt-20 max-w-3xl text-center">
+              <div className="relative rounded-[2rem] border border-brand-100 bg-white px-6 py-12 shadow-soft sm:px-12">
+                <div className="bg-girih pointer-events-none absolute inset-0 rounded-[2rem] opacity-60 [mask-image:radial-gradient(ellipse_at_center,transparent_40%,black)]" aria-hidden="true" />
+                <div className="relative font-fa text-2xl font-bold leading-[2.1] text-brand-800 sm:text-3xl" dir="rtl" lang="fa">
+                  <div>{t.rumi.verse1}</div>
+                  <div>{t.rumi.verse2}</div>
+                </div>
+                <p className="relative mx-auto mt-6 max-w-xl text-lg italic text-ink-soft" lang="de" dir="ltr">
+                  {t.rumi.translation}
+                </p>
+                <p className="relative mt-4 text-sm font-semibold text-brand-700">{t.rumi.source}</p>
+              </div>
+            </Reveal>
           </div>
         </section>
+
+        <Ornament />
 
         {/* ---------- Ablauf ---------- */}
         <section id="ablauf" className="scroll-mt-24 py-20 lg:py-28">
@@ -254,24 +272,25 @@ export function HomeContent({ locale, t }: { locale: Locale; t: Dictionary }) {
           </div>
         </section>
 
+        <Ornament className="mb-16" />
+
         {/* ---------- CTA ---------- */}
         <section className="pb-8">
           <div className="container-page">
             <Reveal>
-              <div className="relative overflow-hidden rounded-[2rem] bg-brand-700 px-8 py-14 text-white shadow-deep sm:px-14 sm:py-16">
-                <div className="bg-girih-light absolute inset-0 opacity-70" aria-hidden="true" />
-                <div className="absolute -bottom-32 -end-20 h-80 w-80 rounded-full bg-brand-500/40 blur-3xl" aria-hidden="true" />
+              <div className="relative overflow-hidden rounded-[2rem] border border-brand-100 bg-white px-8 py-14 shadow-deep sm:px-14 sm:py-16">
+                <div className="bg-girih absolute inset-0 opacity-80 [mask-image:linear-gradient(to_left,black,transparent_70%)]" aria-hidden="true" />
                 <div className="relative flex flex-col items-start justify-between gap-8 md:flex-row md:items-center">
                   <div>
                     <h2 className="text-3xl font-bold sm:text-4xl">{t.cta.title}</h2>
-                    <p className="mt-3 max-w-lg text-lg text-brand-100">{t.cta.text}</p>
+                    <p className="mt-3 max-w-lg text-lg text-ink-soft">{t.cta.text}</p>
                   </div>
                   <div className="flex flex-wrap gap-3">
-                    <Link href={`/${locale}/termin`} className="btn bg-white !px-7 !py-4 text-brand-800 shadow-lift hover:-translate-y-0.5 hover:bg-brand-50">
+                    <Link href={`/${locale}/termin`} className="btn-primary !px-7 !py-4">
                       {t.cta.button} <IconArrow size={20} />
                     </Link>
-                    <a href={site.phoneHref} className="btn border border-white/30 !px-6 !py-4 text-white hover:bg-white/10">
-                      <IconPhone size={18} />
+                    <a href={site.phoneHref} className="btn-ghost !px-6 !py-4">
+                      <IconPhone size={18} className="text-brand-600" />
                       <span dir="ltr">{site.phone}</span>
                     </a>
                   </div>

@@ -102,17 +102,17 @@ export function FloatingContact({ locale, t }: { locale: Locale; t: Dictionary["
           aria-label={t.title}
           className="w-[min(92vw,380px)] origin-bottom-right animate-fade-up overflow-hidden rounded-3xl border border-line bg-white shadow-deep"
         >
-          <div className="relative flex items-center gap-3 bg-brand-700 px-5 py-4 text-white">
-            <div className="bg-girih-light absolute inset-0 opacity-60" aria-hidden="true" />
+          <div className="relative flex items-center gap-3 border-b border-line bg-white px-5 py-4 text-ink">
+            <div className="bg-girih absolute inset-0 opacity-70" aria-hidden="true" />
             <div className="relative">
               <LogoMark size={38} />
-              <span className="absolute -bottom-0.5 -end-0.5 h-3 w-3 rounded-full border-2 border-brand-700 bg-brand-300" />
+              <span className="absolute -bottom-0.5 -end-0.5 h-3 w-3 rounded-full border-2 border-white bg-brand-400" />
             </div>
             <div className="relative min-w-0 flex-1">
               <div className="font-bold">{t.title}</div>
-              <div className="text-xs text-brand-100">{t.subtitle}</div>
+              <div className="text-xs text-ink-muted">{t.subtitle}</div>
             </div>
-            <button type="button" onClick={() => setOpen(false)} className="relative grid h-9 w-9 place-items-center rounded-full hover:bg-white/10" aria-label="Schließen">
+            <button type="button" onClick={() => setOpen(false)} className="relative grid h-9 w-9 place-items-center rounded-full text-ink-muted hover:bg-brand-50" aria-label="Schließen">
               <IconClose size={18} />
             </button>
           </div>

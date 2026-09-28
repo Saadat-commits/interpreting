@@ -18,7 +18,7 @@ installMockApi();
 
 function DemoBar({ locale }: { locale: Locale }) {
   return (
-    <div className="relative z-50 bg-brand-900 px-4 py-2 text-center text-[13px] text-brand-100" dir={locale === "fa" ? "rtl" : "ltr"}>
+    <div className="relative z-50 border-b border-line bg-white px-4 py-2 text-center text-[12px] text-ink-muted" dir={locale === "fa" ? "rtl" : "ltr"}>
       {locale === "fa"
         ? "پیش‌نمایش – حالت نمایشی: رزروها ذخیره نمی‌شوند و ایمیلی ارسال نمی‌شود."
         : "Vorschau im Demo-Modus – Buchungen werden nicht gespeichert, es werden keine E-Mails verschickt."}

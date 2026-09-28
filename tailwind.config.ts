@@ -25,7 +25,7 @@ const config: Config = {
           faint: "#A3AFA9",
         },
         line: "#E4EAE6",
-        paper: "#FBFCFB",
+        paper: "#FFFFFF",
         // Ausschließlich für „nicht verfügbar“ im Kalender
         busy: { DEFAULT: "#B94A43", bg: "#FBEFEE", line: "#F0D3D1" },
       },

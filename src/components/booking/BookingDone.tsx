@@ -97,14 +97,6 @@ export function CheckEmail({ t, locale, pending, onChangeEmail }: { t: T; locale
         </p>
         {time && <p className="mt-3 text-sm text-ink-muted">{v.holdNote.replace("{time}", time)}</p>}
 
-        <ol className="mx-auto mt-8 grid max-w-2xl gap-3 text-start sm:grid-cols-3">
-          {v.steps.map((s, i) => (
-            <li key={s} className="flex items-center gap-3 rounded-2xl border border-line bg-white/90 px-4 py-3 shadow-soft">
-              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-brand-600 text-sm font-bold text-white">{(i + 1).toLocaleString(intlLocale(locale))}</span>
-              <span className="text-sm font-semibold text-ink">{s}</span>
-            </li>
-          ))}
-        </ol>
 
         {DEMO && pending.demoToken && (
           <div className="mx-auto mt-10 max-w-md text-start" dir="ltr">

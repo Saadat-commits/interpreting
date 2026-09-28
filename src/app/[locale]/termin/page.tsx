@@ -31,7 +31,6 @@ export default async function BookingPage({
       <Header locale={locale} t={t.nav} minimal />
       <main className="relative min-h-[80vh] overflow-hidden pb-32">
         <div className="bg-girih pointer-events-none absolute inset-x-0 top-0 h-[420px] mask-fade-b opacity-80" aria-hidden="true" />
-        <div className="pointer-events-none absolute -top-40 start-1/2 h-[480px] w-[720px] -translate-x-1/2 rounded-full bg-brand-100/40 blur-3xl" aria-hidden="true" />
         <div className="container-page relative max-w-4xl pt-10 sm:pt-14">
           <div className="text-center">
             <h1 className="text-4xl font-bold sm:text-5xl">{t.booking.title}</h1>
