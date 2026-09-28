@@ -59,14 +59,16 @@ export function BookingWizard({
   t,
   initialService,
   initialCategory,
+  initialWho,
 }: {
   locale: Locale;
   t: T;
   initialService?: ServiceType;
   initialCategory?: AppointmentCategory;
+  initialWho?: "private" | "organisation";
 }) {
   const f = t.booking.flow;
-  const [who, setWho] = useState<"private" | "organisation" | null>(null);
+  const [who, setWho] = useState<"private" | "organisation" | null>(initialWho ?? null);
   const [how, setHow] = useState<How | null>(initialService ?? null);
   const [language, setLanguage] = useState<Language | null>(null);
   const [duration, setDuration] = useState(60);

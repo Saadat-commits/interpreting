@@ -20,6 +20,7 @@ export interface AddressTexts {
   streetFound: string;
   streetUnknown: string;
   places: string;
+  mapOpen: string;
 }
 
 interface Suggestion {
@@ -412,6 +413,41 @@ export function StructuredAddress({
           ) : null}
         </div>
       </div>
+      {value && <MapPreview address={value} label={t.mapOpen} />}
+    </div>
+  );
+}
+
+/** Adresse sofort auf der Karte zeigen – so sieht man, ob sie stimmt */
+function MapPreview({ address, label }: { address: PostalAddress; label: string }) {
+  const q = encodeURIComponent([address.placeName, formatAddress(address)].filter(Boolean).join(", "));
+  const demo = process.env.NEXT_PUBLIC_DEMO === "1";
+  return (
+    <div className="overflow-hidden rounded-2xl border border-line bg-white animate-fade-up">
+      {!demo && (
+        <iframe
+          title={label}
+          src={`https://www.google.com/maps?q=${q}&hl=de&z=16&output=embed`}
+          className="block h-44 w-full border-0 sm:h-52"
+          loading="lazy"
+          referrerPolicy="no-referrer-when-downgrade"
+        />
+      )}
+      <a
+        href={`https://www.google.com/maps/search/?api=1&query=${q}`}
+        target="_blank"
+        rel="noopener"
+        className="flex items-center gap-3 px-4 py-3 text-[14px] hover:bg-brand-50/60"
+        dir="ltr"
+      >
+        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-brand-600 text-white">
+          <IconPin size={17} />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block truncate font-semibold text-ink">{address.placeName || formatAddress(address)}</span>
+          <span className="block text-[12.5px] font-semibold text-brand-700">{label} ↗</span>
+        </span>
+      </a>
     </div>
   );
 }

@@ -182,3 +182,26 @@ export const categoryIcons = {
   counseling: IconCounsel,
   other: IconMore,
 } as const;
+export const IconBriefcase = (p: P) => (
+  <Base {...p}>
+    <rect x="3" y="7" width="18" height="13" rx="2" />
+    <path d="M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7M3 12.5h18" />
+  </Base>
+);
+export const IconHome = (p: P) => (
+  <Base {...p}>
+    <path d="M4 10.5 12 4l8 6.5V19a1 1 0 0 1-1 1h-4.5v-5.5h-5V20H5a1 1 0 0 1-1-1v-8.5Z" />
+  </Base>
+);
+export const IconHelp = (p: P) => (
+  <Base {...p}>
+    <circle cx="12" cy="12" r="8.5" />
+    <path d="M9.6 9.4a2.5 2.5 0 0 1 4.8.9c0 1.7-2.4 2.1-2.4 3.7M12 16.9v.1" />
+  </Base>
+);
+export const IconDoc = (p: P) => (
+  <Base {...p}>
+    <path d="M7 3.5h7l4 4V20a.5.5 0 0 1-.5.5h-10.5A1 1 0 0 1 6 19.5V4.5a1 1 0 0 1 1-1Z" />
+    <path d="M14 3.5V8h4M9 12h6M9 15.5h6" />
+  </Base>
+);

@@ -18,7 +18,6 @@ export default async function VerifyPage({ params, searchParams }: { params: Pro
     <>
       <Header locale={locale} t={t.nav} minimal />
       <main className="relative min-h-[80vh] overflow-hidden pb-32">
-        <div className="bg-girih pointer-events-none absolute inset-x-0 top-0 h-[420px] mask-fade-b opacity-80" aria-hidden="true" />
         <div className="container-page relative max-w-3xl pt-12">
           <VerifyBooking t={t} locale={locale} token={token} />
         </div>

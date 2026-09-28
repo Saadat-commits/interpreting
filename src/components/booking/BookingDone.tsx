@@ -5,7 +5,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { site } from "@/config/site";
 import type { Dictionary } from "@/lib/i18n";
 import { intlLocale } from "@/lib/i18n";
-import { starPath } from "@/lib/star";
 import type { Locale } from "@/lib/types";
 import { IconAlert, IconArrow, IconCalendar, IconCheck, IconMail, IconPhone } from "../icons";
 
@@ -53,7 +52,7 @@ function Envelope() {
         </defs>
         <rect x="10" y="30" width="140" height="84" rx="12" fill="url(#env-b)" />
         <rect x="22" y="8" width="116" height="80" rx="8" fill="#fff" />
-        <path d={starPath(80, 40, 16, 0.64)} fill="none" stroke="#2C8A5D" strokeWidth="2" strokeLinejoin="round" />
+        <path d="M62 50 72 36l5 7 4-5 11 12Z" fill="#2C8A5D" />
         <rect x="46" y="64" width="68" height="5" rx="2.5" fill="#D9EEE1" />
         <rect x="56" y="74" width="48" height="5" rx="2.5" fill="#D9EEE1" />
         <path d="M10 44 L80 88 L150 44 V104 a10 10 0 0 1-10 10 H20 a10 10 0 0 1-10-10Z" fill="#1F7049" />
@@ -83,7 +82,6 @@ export function CheckEmail({ t, locale, pending, onChangeEmail }: { t: T; locale
 
   return (
     <div className="relative overflow-hidden rounded-[2rem] border border-line bg-white p-6 text-center shadow-deep animate-fade-up sm:p-12">
-      <div className="bg-girih pointer-events-none absolute inset-0 opacity-60 mask-fade-b" aria-hidden="true" />
       <div className="relative">
         <Envelope />
         <h2 className="mx-auto mt-6 max-w-xl text-2xl font-bold sm:text-3xl">{v.checkTitle}</h2>
@@ -164,7 +162,6 @@ export function SuccessCard({ t, locale, booking }: { t: T; locale: Locale; book
 
   return (
     <div className="relative overflow-hidden rounded-[2rem] border border-line bg-white p-6 text-center shadow-deep animate-fade-up sm:p-14">
-      <div className="bg-girih pointer-events-none absolute inset-0 opacity-70 mask-fade-b" aria-hidden="true" />
       <div className="relative mx-auto grid h-20 w-20 place-items-center rounded-full bg-brand-600 text-white shadow-lift ring-8 ring-brand-50">
         <IconCheck size={38} strokeWidth={2.4} />
       </div>

@@ -3,7 +3,7 @@ import { createRoot } from "react-dom/client";
 import { Header } from "@/components/Header";
 import { HomeContent } from "@/components/HomeContent";
 import { LegalPage } from "@/components/LegalPage";
-import { FloatingContact } from "@/components/FloatingContact";
+import { HelpChat } from "@/components/HelpChat";
 import { BookingWizard } from "@/components/booking/BookingWizard";
 import { VerifyBooking } from "@/components/booking/BookingDone";
 import { DatenschutzContent, ImpressumContent } from "@/components/LegalContent";
@@ -47,7 +47,6 @@ function App() {
       <>
         <Header locale={locale} t={t.nav} minimal />
         <main className="relative min-h-[80vh] overflow-hidden pb-32">
-          <div className="bg-girih pointer-events-none absolute inset-x-0 top-0 h-[420px] mask-fade-b opacity-80" aria-hidden="true" />
           <div className="container-page relative max-w-3xl pt-12">
             <VerifyBooking key={path} t={t} locale={locale} token={params.get("t") ?? ""} />
           </div>
@@ -68,6 +67,7 @@ function App() {
               t={t}
               initialService={leistung === "phone" || leistung === "onsite" ? leistung : undefined}
               initialCategory={anlass && anlass in t.categories ? (anlass as AppointmentCategory) : undefined}
+              initialWho={params.get("wer") === "einrichtung" ? "organisation" : undefined}
             />
           </div>
         </main>
@@ -87,7 +87,7 @@ function App() {
     <div lang={locale} dir={dirOf(locale)} className={locale === "fa" ? "font-fa" : "font-sans"}>
       <DemoBar locale={locale} />
       {content}
-      <FloatingContact locale={locale} t={t.chat} />
+      <HelpChat locale={locale} t={t.help} />
     </div>
   );
 }

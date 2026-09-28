@@ -60,8 +60,10 @@ export function computeMonth(input: AvailabilityInput): DayInfo[] {
   const days: DayInfo[] = [];
   for (let d = 1; d <= daysInMonth(input.year, input.month); d++) {
     const key = `${input.year}-${pad(input.month)}-${pad(d)}`;
-    const ranges = cfg.weeklyHours[weekdayOfKey(key)] ?? [];
-    if (key < todayKey || key > lastKey || holidays.has(key) || blocked.has(key) || ranges.length === 0) {
+    const hours = cfg.weeklyHoursByService?.[input.service] ?? cfg.weeklyHours;
+    const ranges = hours[weekdayOfKey(key)] ?? [];
+    const holidayClosed = (cfg.closedOnHolidays?.[input.service] ?? true) && holidays.has(key);
+    if (key < todayKey || key > lastKey || holidayClosed || blocked.has(key) || ranges.length === 0) {
       days.push({ date: key, state: "closed", slots: [] });
       continue;
     }

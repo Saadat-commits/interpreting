@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { notFound } from "next/navigation";
 import { Manrope, Vazirmatn } from "next/font/google";
-import { FloatingContact } from "@/components/FloatingContact";
+import { HelpChat } from "@/components/HelpChat";
 import { dirOf, getDictionary, isLocale, locales } from "@/lib/i18n";
 import "../globals.css";
 
@@ -35,7 +35,7 @@ export default async function LocaleLayout({ children, params }: { children: Rea
     <html lang={locale} dir={dirOf(locale)} className={`${sans.variable} ${fa.variable}`}>
       <body className="min-h-screen">
         {children}
-        <FloatingContact locale={locale} t={t.chat} />
+        <HelpChat locale={locale} t={t.help} />
       </body>
     </html>
   );

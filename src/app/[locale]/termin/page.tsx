@@ -18,11 +18,11 @@ export default async function BookingPage({
   searchParams,
 }: {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ leistung?: string; anlass?: string }>;
+  searchParams: Promise<{ leistung?: string; anlass?: string; wer?: string }>;
 }) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
-  const { leistung, anlass } = await searchParams;
+  const { leistung, anlass, wer } = await searchParams;
   const t = getDictionary(locale);
   const initial = leistung === "phone" || leistung === "onsite" ? leistung : undefined;
   const category = anlass && anlass in t.categories ? (anlass as AppointmentCategory) : undefined;
@@ -31,7 +31,7 @@ export default async function BookingPage({
       <Header locale={locale} t={t.nav} minimal />
       <main className="relative min-h-[80vh] overflow-x-clip pb-32">
         <div className="container-page relative max-w-6xl">
-          <BookingWizard locale={locale} t={t} initialService={initial} initialCategory={category} />
+          <BookingWizard locale={locale} t={t} initialService={initial} initialCategory={category} initialWho={wer === "einrichtung" ? "organisation" : wer === "privat" ? "private" : undefined} />
         </div>
       </main>
     </>

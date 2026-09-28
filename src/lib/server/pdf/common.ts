@@ -93,16 +93,8 @@ export function text(
 /** Kleines Markenzeichen: achtzackiger Stern (Girih-Motiv) in grünem Quadrat */
 export function drawMark(page: PDFPage, x: number, y: number, s: number) {
   page.drawRectangle({ x, y, width: s, height: s, color: C.brand });
-  const cx = x + s / 2;
-  const cy = y + s / 2;
-  const r = s * 0.3;
-  const pts: string[] = [];
-  for (let i = 0; i < 16; i++) {
-    const rad = i % 2 === 0 ? r : r * 0.62;
-    const a = (Math.PI / 8) * i - Math.PI / 2;
-    pts.push(`${(Math.cos(a) * rad).toFixed(2)} ${(-Math.sin(a) * rad).toFixed(2)}`);
-  }
-  page.drawSvgPath(`M ${pts.join(" L ")} Z`, { x: cx, y: cy, borderColor: C.white, borderWidth: 1.1 });
+  // zwei Berggipfel (SVG-Koordinaten 0–40, y nach unten)
+  page.drawSvgPath("M6 29.5 L15.2 15 L19.8 22.1 L23.2 17.2 L34 29.5 Z", { x, y: y + s, scale: s / 40, color: C.white });
 }
 
 /** Abgerundetes Rechteck; (x, y) = linke untere Ecke wie bei pdf-lib üblich */

@@ -87,10 +87,41 @@ export function installMockApi() {
       const all = [...(DEMO_STREETS[plz] ?? []), ...addresses.filter((a) => a.postalCode === plz).map((a) => a.street)];
       return json({ streets: rankStreets(all, url.searchParams.get("q") ?? "", 6) });
     }
+    if (path === "/api/assistant") {
+      await wait(900);
+      const body = JSON.parse(String(init?.body ?? "{}")) as { input: string; locale: "de" | "fa"; messages: unknown[] };
+      return json({ reply: demoAssistant(body.input, body.locale), messages: [...body.messages, { role: "user", content: body.input }] });
+    }
     if (path === "/api/chat") {
       await wait(500);
       return json({ ok: true });
     }
     return json({ error: "not_found" }, 404);
   };
+}
+
+/** Vorschau: einfache Beispielantworten. Live antwortet Claude und bucht direkt im Chat. */
+function demoAssistant(q: string, locale: "de" | "fa") {
+  const t = q.toLowerCase();
+  const fa = locale === "fa" || /[\u0600-\u06FF]/.test(q);
+  const has = (...w: string[]) => w.some((x) => t.includes(x));
+  if (has("biet", "leistung", "was mach", "خدمات", "چه"))
+    return fa
+      ? "دری، فارسی و پشتو ⇄ آلمانی. حضوری در فورت و حدود ۵۰ کیلومتر اطراف (نورنبرگ، ارلانگن، بامبرگ …) – مثلاً Jugendamt، Jobcenter، داکتر، مکتب و ادارات. تلفنی در سراسر آلمان، شبانه‌روزی."
+      : "Ich dolmetsche Dari, Farsi und Paschtu ⇄ Deutsch. Vor Ort in Fürth und ca. 50 km Umkreis (Nürnberg, Erlangen, Bamberg …) – z. B. Jugendamt, Jobcenter, Arzt, Schule und Behörden. Telefonisch in ganz Deutschland, rund um die Uhr.";
+  if (has("wo ", "einsatz", "wohin", "کجا", "bamberg", "erlangen"))
+    return fa
+      ? "حضوری: فورت، نورنبرگ، ارلانگن، بامبرگ، شواباخ، فورشهایم، آنسباخ – حدود ۵۰ کیلومتر. تلفنی: سراسر آلمان."
+      : "Vor Ort: Fürth, Nürnberg, Erlangen, Bamberg, Schwabach, Forchheim, Ansbach – ca. 50 km um Fürth. Telefonisch: ganz Deutschland.";
+  if (has("kost", "preis", "€", "euro", "قیمت", "هزینه"))
+    return fa
+      ? "حداقل ۱ ساعت محاسبه می‌شود، بعد از آن دقیقه‌ای. مبلغ دقیق در صورت‌حساب است."
+      : "Abgerechnet wird mindestens 1 Stunde, danach minutengenau. Den genauen Betrag sehen Sie auf der Rechnung – oder rufen Sie kurz an.";
+  if (has("buch", "termin", "وقت", "رزرو"))
+    return fa
+      ? "با کمال میل! حضوری یا تلفنی؟ به کدام زبان؟ و چه روزی مناسب است؟ (در پیش‌نمایش: نسخهٔ اصلی همین‌جا در چت وقت را ثبت می‌کند.)"
+      : "Gern! Vor Ort oder am Telefon, in welcher Sprache und an welchem Tag? (Vorschau: Auf der echten Website bucht die KI den Termin direkt hier im Chat – mit E-Mail-Bestätigung.)";
+  return fa
+    ? "در پیش‌نمایش فقط پاسخ‌های نمونه دارم. در سایت اصلی دستیار به همهٔ سؤالات جواب می‌دهد و وقت می‌گیرد."
+    : "In der Vorschau habe ich nur Beispielantworten. Auf der echten Website beantwortet die KI jede Frage und bucht auch direkt Termine.";
 }

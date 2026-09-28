@@ -1,20 +1,15 @@
 import Link from "next/link";
-import { starPath } from "@/lib/star";
 import { site } from "@/config/site";
 import type { Locale } from "@/lib/types";
 
+/** Logo: zwei Berggipfel mit Schnee – ruhig, ohne religiöse Symbole */
 export function LogoMark({ size = 36 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 40 40" aria-hidden="true" className="shrink-0">
-      <defs>
-        <linearGradient id="lm" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#2C8A5D" />
-          <stop offset="1" stopColor="#154831" />
-        </linearGradient>
-      </defs>
-      <rect width="40" height="40" rx="11" fill="url(#lm)" />
-      <path d={starPath(20, 20, 11.5, 0.66)} fill="none" stroke="#fff" strokeWidth="1.8" strokeLinejoin="round" />
-      <circle cx="20" cy="20" r="2.8" fill="#fff" />
+      <rect width="40" height="40" rx="11" fill="#1F6B47" />
+      <path d="M6 29.5 15.2 15l4.6 7.1 3.4-4.9L34 29.5Z" fill="#fff" />
+      <path d="m15.2 15-2.6 4.1 1.6-.6 1.3 1.2 1.2-1.3 1.2.4Z" fill="#1F6B47" opacity=".35" />
+      <path d="M6 29.5h28" stroke="#fff" strokeWidth="1.6" strokeLinecap="round" />
     </svg>
   );
 }
@@ -22,7 +17,7 @@ export function LogoMark({ size = 36 }: { size?: number }) {
 export function Logo({ locale }: { locale: Locale }) {
   return (
     <Link href={`/${locale}`} className="group flex min-w-0 items-center gap-2.5 sm:gap-3" aria-label={site.brand}>
-      <span className="transition-transform duration-500 group-hover:rotate-[22.5deg]">
+      <span>
         <LogoMark size={34} />
       </span>
       <span className="leading-tight" dir="ltr">

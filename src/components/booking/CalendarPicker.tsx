@@ -105,6 +105,32 @@ export function CalendarPicker({
     return null;
   }, [days]);
 
+  const slotButton = (s: { start: string; time: string; available: boolean }) =>
+    s.available ? (
+      <button
+        key={s.start}
+        type="button"
+        onClick={() => onSelect(s.start)}
+        aria-pressed={selected === s.start}
+        className={`rounded-xl py-2.5 text-[15px] font-semibold transition-all duration-200 ${
+          selected === s.start
+            ? "bg-brand-600 text-white shadow-lift ring-4 ring-brand-100"
+            : "border border-brand-200 bg-brand-50 text-brand-800 hover:-translate-y-0.5 hover:border-brand-400 hover:shadow-soft"
+        }`}
+      >
+        {fmtTime(s.time)}
+      </button>
+    ) : (
+      <span
+        key={s.start}
+        className="cursor-not-allowed rounded-xl border border-busy-line/60 bg-busy-bg/70 py-2.5 text-center text-[15px] font-medium text-busy/60 line-through decoration-busy/30"
+        aria-disabled="true"
+        title={t.legendBusy}
+      >
+        {fmtTime(s.time)}
+      </span>
+    );
+
   return (
     <div>
     {nextFree && !selected && (
@@ -245,34 +271,28 @@ export function CalendarPicker({
               <IconClock size={14} /> {t.timeNote}
             </p>
             {dayInfo.slots.some((s) => s.available) ? (
-              <div className="mt-5 grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-3">
-                {dayInfo.slots.map((s) =>
-                  s.available ? (
-                    <button
-                      key={s.start}
-                      type="button"
-                      onClick={() => onSelect(s.start)}
-                      aria-pressed={selected === s.start}
-                      className={`rounded-xl py-2.5 text-[15px] font-semibold transition-all duration-200 ${
-                        selected === s.start
-                          ? "bg-brand-600 text-white shadow-lift ring-4 ring-brand-100"
-                          : "border border-brand-200 bg-brand-50 text-brand-800 hover:-translate-y-0.5 hover:border-brand-400 hover:shadow-soft"
-                      }`}
-                    >
-                      {fmtTime(s.time)}
-                    </button>
-                  ) : (
-                    <span
-                      key={s.start}
-                      className="cursor-not-allowed rounded-xl border border-busy-line/60 bg-busy-bg/70 py-2.5 text-center text-[15px] font-medium text-busy/60 line-through decoration-busy/30"
-                      aria-disabled="true"
-                      title={t.legendBusy}
-                    >
-                      {fmtTime(s.time)}
-                    </span>
-                  ),
-                )}
-              </div>
+              dayInfo.slots.length > 20 ? (
+                // Telefon rund um die Uhr: nach Tageszeit gruppiert, nur freie Zeiten
+                <div className="mt-4 space-y-4">
+                  {t.dayparts.map((label, i) => {
+                    const from = [0, 6, 12, 18][i] * 60;
+                    const to = from + 360;
+                    const list = dayInfo.slots.filter((s) => {
+                      const [h, m] = s.time.split(":").map(Number);
+                      return s.available && h * 60 + m >= from && h * 60 + m < to;
+                    });
+                    if (!list.length) return null;
+                    return (
+                      <div key={label}>
+                        <div className="mb-2 text-[12px] font-bold uppercase tracking-[0.12em] text-ink-muted">{label}</div>
+                        <div className="grid grid-cols-4 gap-2 sm:grid-cols-5 lg:grid-cols-4">{list.map(slotButton)}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="mt-5 grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-3">{dayInfo.slots.map(slotButton)}</div>
+              )
             ) : (
               <p className="mt-6 text-sm text-ink-muted">{t.noSlots}</p>
             )}

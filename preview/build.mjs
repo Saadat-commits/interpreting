@@ -5,7 +5,7 @@
  */
 import { build } from "esbuild";
 import { execSync } from "node:child_process";
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { cpSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -31,6 +31,7 @@ const js = await build({
     "process.env.NODE_ENV": '"production"',
     "process.env.NEXT_PUBLIC_CRISP_WEBSITE_ID": '""',
     "process.env.NEXT_PUBLIC_DEMO": '"1"',
+    "process.env.NEXT_PUBLIC_ASSET_BASE": '""',
     "process.env.NEXT_PUBLIC_AGB_URL": '"agb.pdf"',
     "process.env.NEXT_PUBLIC_ADDRESS_HINT": '""',
   },
@@ -70,4 +71,6 @@ ${css}
 <script>${js.outputFiles[0].text.replace(/<\/script/g, "<\\/script")}</script>
 `;
 writeFileSync(path.join(dist, "index.html"), html);
+// Fotos (Bilder aus /public/images) neben die Seite legen
+cpSync(path.join(root, "public/images"), path.join(dist, "images"), { recursive: true });
 console.log(`preview/dist/index.html – ${(html.length / 1024).toFixed(0)} KB`);

@@ -5,7 +5,7 @@ import { de } from "@/lib/i18n/de";
 import { formatAddress } from "@/lib/address";
 import type { Booking, Invoice } from "@/lib/types";
 import { formatEuro } from "../billing";
-import { A4, C, createDoc, drawMark, drawQr, girih, roundRect, safe, text } from "./common";
+import { A4, C, createDoc, drawMark, drawQr, roundRect, safe, text } from "./common";
 
 const tz = availabilityConfig.timezone;
 const M = 48;
@@ -52,7 +52,6 @@ export async function renderInvoicePdf(invoice: Invoice, booking: Booking): Prom
   /* ---------- Kopfbereich mit Girih-Muster ---------- */
   const bandH = 120;
   page.drawRectangle({ x: 0, y: A4.h - bandH, width: A4.w, height: bandH, color: C.brandSoft });
-  girih(page, -10, A4.h - bandH + 6, A4.w + 20, bandH, 30, C.brand, 0.1);
   page.drawRectangle({ x: 0, y: A4.h - 5, width: A4.w, height: 5, color: C.brand });
 
   let y = A4.h - 62;
@@ -207,7 +206,6 @@ export async function renderInvoicePdf(invoice: Invoice, booking: Booking): Prom
 
   /* ---------- Fußzeile ---------- */
   const fy = 30;
-  girih(page, -10, 0, A4.w + 20, 16, 22, C.brand, 0.08);
   page.drawLine({ start: { x: M, y: fy + 28 }, end: { x: right, y: fy + 28 }, thickness: 0.5, color: C.line });
   const col = width / 3;
   const foot = [

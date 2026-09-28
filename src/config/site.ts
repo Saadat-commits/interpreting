@@ -7,8 +7,8 @@ export const site = {
   brandTagline: "Dolmetschen & Begleitung",
   owner: "Vorname Nachname", // TODO: Inhaber:in
   street: "Musterstraße 1", // TODO
-  postalCode: "90402", // TODO
-  city: "Nürnberg",
+  postalCode: "90762", // TODO
+  city: "Fürth",
   country: "Deutschland",
   phone: "+49 911 0000000", // TODO
   phoneHref: "tel:+499110000000", // TODO
@@ -22,6 +22,9 @@ export const site = {
     bic: "XXXXDEXXXXX", // TODO
     name: "Musterbank", // TODO
   },
+  /** Einsatzgebiet vor Ort: Fürth und ca. 50 km Umkreis */
+  serviceRadiusKm: 50,
+  serviceArea: ["Fürth", "Nürnberg", "Erlangen", "Bamberg", "Schwabach", "Zirndorf", "Herzogenaurach", "Forchheim", "Ansbach", "Neumarkt"],
   timezone: "Europe/Berlin",
   agbUrl: process.env.NEXT_PUBLIC_AGB_URL || "/agb.pdf",
 } as const;
