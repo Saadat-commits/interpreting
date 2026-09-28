@@ -91,11 +91,11 @@ export async function renderInvoicePdf(invoice: Invoice, booking: Booking): Prom
     text(page, S, safe(S, v).slice(0, 95), M + 130, dy, 9, C.ink);
     dy -= rowH;
   }
-  y -= boxH + 34;
+  y -= boxH + 30;
 
   // ---------- Abrechnung ----------
   text(page, B, "Abrechnung", M, y, 12, C.brand);
-  y -= 16;
+  y -= 22;
   const cols = { pos: M + 12, qty: right - 190, unit: right - 100, total: right - 12 };
   page.drawRectangle({ x: M, y: y - 8, width, height: 22, color: C.brandSoft });
   text(page, S, "Position", cols.pos, y, 8.5, C.soft);
@@ -162,7 +162,7 @@ export async function renderInvoicePdf(invoice: Invoice, booking: Booking): Prom
   }
 
   // Fußzeile
-  const fy = 60;
+  const fy = 38;
   page.drawLine({ start: { x: M, y: fy + 34 }, end: { x: right, y: fy + 34 }, thickness: 0.5, color: C.line });
   const col = width / 3;
   const foot = [
@@ -173,7 +173,7 @@ export async function renderInvoicePdf(invoice: Invoice, booking: Booking): Prom
   foot.forEach((lines, i) =>
     lines.filter(Boolean).forEach((l, j) => text(page, R, l, M + i * col, fy + 20 - j * 11, 7.5, C.muted)),
   );
-  text(page, R, "Es gelten unsere Allgemeinen Geschäftsbedingungen.", M, fy - 20, 7, C.muted);
+  text(page, R, "Es gelten unsere Allgemeinen Geschäftsbedingungen.", M, fy - 16, 7, C.muted);
 
   return doc.save();
 }
