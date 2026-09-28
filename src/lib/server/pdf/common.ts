@@ -1,0 +1,106 @@
+import { promises as fs } from "node:fs";
+import path from "node:path";
+import fontkit from "@pdf-lib/fontkit";
+import { PDFDocument, PDFFont, PDFPage, rgb, type RGB } from "pdf-lib";
+
+export const A4 = { w: 595.28, h: 841.89 };
+export const M = 56; // Seitenrand
+
+export const C = {
+  ink: rgb(0.075, 0.125, 0.1),
+  soft: rgb(0.23, 0.29, 0.26),
+  muted: rgb(0.42, 0.48, 0.45),
+  line: rgb(0.89, 0.92, 0.9),
+  brand: rgb(0.122, 0.439, 0.286), // #1F7049
+  brandSoft: rgb(0.937, 0.969, 0.949), // #EFF7F2
+  white: rgb(1, 1, 1),
+};
+
+export interface Fonts {
+  regular: PDFFont;
+  semibold: PDFFont;
+  bold: PDFFont;
+}
+
+let fontBytes: { regular: Uint8Array; semibold: Uint8Array; bold: Uint8Array } | null = null;
+
+async function loadFontBytes() {
+  if (!fontBytes) {
+    const dir = path.join(process.cwd(), "assets", "fonts");
+    const [regular, semibold, bold] = await Promise.all(
+      ["Manrope-Regular.ttf", "Manrope-SemiBold.ttf", "Manrope-Bold.ttf"].map((f) => fs.readFile(path.join(dir, f))),
+    );
+    fontBytes = { regular, semibold, bold };
+  }
+  return fontBytes;
+}
+
+export async function createDoc(title: string) {
+  const doc = await PDFDocument.create();
+  doc.registerFontkit(fontkit);
+  const bytes = await loadFontBytes();
+  const fonts: Fonts = {
+    regular: await doc.embedFont(bytes.regular, { subset: true }),
+    semibold: await doc.embedFont(bytes.semibold, { subset: true }),
+    bold: await doc.embedFont(bytes.bold, { subset: true }),
+  };
+  doc.setTitle(title);
+  doc.setAuthor("Interpreting NBG");
+  doc.setCreator("Interpreting NBG");
+  doc.setLanguage("de-DE");
+  return { doc, fonts };
+}
+
+/** Ersetzt Zeichen, die die Schrift nicht enthält (z. B. arabische Schrift), durch Umschreibung. */
+export function safe(font: PDFFont, text: string) {
+  const supported = new Set(font.getCharacterSet());
+  let out = "";
+  for (const ch of text) out += supported.has(ch.codePointAt(0)!) ? ch : ch === "↔" ? "–" : "";
+  return out.replace(/\s{2,}/g, " ").trim() || "—";
+}
+
+export function wrap(font: PDFFont, text: string, size: number, maxWidth: number): string[] {
+  const lines: string[] = [];
+  for (const para of text.split("\n")) {
+    let line = "";
+    for (const word of para.split(/\s+/)) {
+      const test = line ? `${line} ${word}` : word;
+      if (font.widthOfTextAtSize(test, size) > maxWidth && line) {
+        lines.push(line);
+        line = word;
+      } else line = test;
+    }
+    lines.push(line);
+  }
+  return lines;
+}
+
+export function text(
+  page: PDFPage,
+  font: PDFFont,
+  str: string,
+  x: number,
+  y: number,
+  size: number,
+  color: RGB = C.ink,
+  align: "left" | "right" = "left",
+) {
+  const s = safe(font, str);
+  const dx = align === "right" ? font.widthOfTextAtSize(s, size) : 0;
+  page.drawText(s, { x: x - dx, y, size, font, color });
+}
+
+/** Kleines Markenzeichen: achtzackiger Stern (Girih-Motiv) in grünem Quadrat */
+export function drawMark(page: PDFPage, x: number, y: number, s: number) {
+  page.drawRectangle({ x, y, width: s, height: s, color: C.brand });
+  const cx = x + s / 2;
+  const cy = y + s / 2;
+  const r = s * 0.3;
+  const pts: string[] = [];
+  for (let i = 0; i < 16; i++) {
+    const rad = i % 2 === 0 ? r : r * 0.62;
+    const a = (Math.PI / 8) * i - Math.PI / 2;
+    pts.push(`${(Math.cos(a) * rad).toFixed(2)} ${(-Math.sin(a) * rad).toFixed(2)}`);
+  }
+  page.drawSvgPath(`M ${pts.join(" L ")} Z`, { x: cx, y: cy, borderColor: C.white, borderWidth: 1.1 });
+}
