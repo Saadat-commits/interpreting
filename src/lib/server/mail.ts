@@ -7,7 +7,10 @@ import { availabilityConfig } from "@/config/availability";
 import { de } from "@/lib/i18n/de";
 import { fa } from "@/lib/i18n/fa";
 import { formatAddress } from "@/lib/address";
-import type { Booking, ChatMessage, Invoice } from "@/lib/types";
+import { hamrahCopy } from "@/lib/i18n/hamrah";
+import { answerRows, type Answers } from "@/lib/service-request";
+import { serviceBySlug } from "@/config/services";
+import type { Booking, ChatMessage, Invoice, ServiceRequest } from "@/lib/types";
 
 interface Attachment {
   filename: string;
@@ -219,6 +222,55 @@ export async function notifyOwnerOfBooking(b: Booking, invoice: Invoice | null, 
     b.contact.email,
     invoice ? ["Buchungen", "Rechnungen"] : ["Buchungen"],
   );
+}
+
+function requestRows(r: ServiceRequest, locale: "de" | "fa"): [string, string][] {
+  const s = serviceBySlug(r.service);
+  if (!s) return [];
+  const c = hamrahCopy[locale].request;
+  return [[c.serviceLabel, s.name[locale]], ...answerRows(s, r.answers as Answers, locale, { yes: c.yes, no: c.no })];
+}
+
+export async function notifyOwnerOfRequest(r: ServiceRequest) {
+  const to = process.env.OWNER_EMAIL || delegatedUser() || site.email;
+  const name = serviceBySlug(r.service)?.name.de ?? r.service;
+  const rows: [string, string][] = [
+    ...requestRows(r, "de"),
+    ["Kunde", `${r.contact.customerType === "business" ? `${r.contact.company || "Firma"} · ` : ""}${r.contact.name}`],
+    ["Kontakt", `${r.contact.email} · ${r.contact.phone}`],
+    ["Sprache", r.locale === "fa" ? "Persisch" : "Deutsch"],
+  ];
+  if (r.notes) rows.push(["Hinweise", r.notes]);
+  await send(
+    to,
+    `📝 Neue Anfrage ${r.reference}: ${name} – ${r.contact.name}`,
+    layout(`<h1 style="font-size:20px">Neue Anfrage ${esc(r.reference)} · ${esc(name)}</h1><p style="font-size:14px;color:#3B4A43">Bitte Angebot erstellen und an ${esc(r.contact.email)} senden.</p>${table(rows, "ltr")}`),
+    rows.map(([k, v]) => `${k}: ${v}`).join("\n"),
+    [],
+    r.contact.email,
+    ["Anfragen"],
+  );
+}
+
+/** Eingangsbestätigung an den Kunden – kein Angebot, nur „ist angekommen“ und was als Nächstes passiert */
+export async function sendRequestReceipt(r: ServiceRequest) {
+  const first = r.contact.name.split(" ")[0];
+  const name = serviceBySlug(r.service)?.name.de ?? r.service;
+  let html = `<h1 style="font-size:22px;margin:12px 0 8px">Danke, ${esc(first)} – Ihre Anfrage ist da.</h1>
+<p style="font-size:15px;line-height:1.6;color:#3B4A43;margin:0">Wir prüfen Ihre Angaben zu <b>${esc(name)}</b> und schicken Ihnen ein verbindliches Angebot. Bei Rückfragen rufen wir kurz an. Erst wenn Sie das Angebot annehmen, ist der Auftrag fest.</p>
+${table(requestRows(r, "de"), "ltr")}
+<p style="font-size:14px;line-height:1.7;color:#3B4A43">Anfragenummer: <b>${esc(r.reference)}</b>. Etwas ergänzen? Antworten Sie einfach auf diese E-Mail oder rufen Sie an: <a href="${site.phoneHref}" style="color:#1F7049;font-weight:600">${esc(site.phone)}</a></p>`;
+  let subject = `Ihre Anfrage ${r.reference}: ${name}`;
+  if (r.locale === "fa") {
+    const faName = serviceBySlug(r.service)?.name.fa ?? r.service;
+    html += `<div dir="rtl" style="text-align:right;border-top:1px solid #E4EAE6;margin-top:24px;padding-top:18px;font-family:Vazirmatn,Tahoma,sans-serif">
+<h2 style="font-size:19px;margin:0 0 8px">سپاس – درخواست شما رسید.</h2>
+<p style="font-size:15px;line-height:1.9;color:#3B4A43;margin:0">اطلاعات شما درباره «${esc(faName)}» را بررسی می‌کنیم و یک پیشنهاد قطعی برایتان می‌فرستیم. کار فقط پس از پذیرش پیشنهاد قطعی می‌شود.</p>
+${table(requestRows(r, "fa"), "rtl")}</div>`;
+    subject += " · درخواست رسید";
+  }
+  const textBody = [`Danke, ${first} – Ihre Anfrage ist da.`, "", ...requestRows(r, "de").map(([k, v]) => `${k}: ${v}`), "", `Anfragenummer: ${r.reference}`, `Telefon: ${site.phone}`].join("\n");
+  await send(r.contact.email, subject, layout(html), textBody, [], undefined, ["Kunden-E-Mails"]);
 }
 
 export async function notifyOwnerOfChat(m: ChatMessage) {

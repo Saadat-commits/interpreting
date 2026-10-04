@@ -1,5 +1,5 @@
 import postgres from "postgres";
-import type { Booking, ChatMessage, Invoice } from "@/lib/types";
+import type { Booking, ChatMessage, Invoice, ServiceRequest } from "@/lib/types";
 import type { Store } from "./index";
 
 /**
@@ -36,10 +36,19 @@ create table if not exists counters (
   name text primary key,
   value integer not null
 );
+create table if not exists service_requests (
+  id text primary key,
+  reference text not null unique,
+  service text not null,
+  status text not null,
+  data jsonb not null,
+  created_at timestamptz not null default now()
+);
 alter table bookings enable row level security;
 alter table invoices enable row level security;
 alter table chat_messages enable row level security;
 alter table counters enable row level security;
+alter table service_requests enable row level security;
 `;
 
 type Sql = postgres.Sql;
@@ -144,5 +153,15 @@ export class PostgresStore implements Store {
   async addChatMessage(msg: ChatMessage) {
     await this.init();
     await this.sql`insert into chat_messages (id, data) values (${msg.id}, ${this.sql.json(msg as never)})`;
+  }
+
+  async createServiceRequest(build: (seq: number) => ServiceRequest) {
+    await this.init();
+    return this.sql.begin(async (tx) => {
+      const year = String(new Date().getFullYear());
+      const r = build(await this.nextSeq(tx as unknown as Sql, `request:${year}`));
+      await tx`insert into service_requests (id, reference, service, status, data) values (${r.id}, ${r.reference}, ${r.service}, ${r.status}, ${tx.json(r as never)})`;
+      return r;
+    }) as Promise<ServiceRequest>;
   }
 }

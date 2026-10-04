@@ -179,6 +179,22 @@ export interface ChatMessage {
   createdAt: string;
 }
 
+/** Anfrage für eine Leistung mit Angebot (Reinigung, Umzug, Montage, Transport, Sicherheit) */
+export interface ServiceRequest {
+  id: string;
+  /** Menschlich lesbare Referenz, z. B. „A-2026-0007“ */
+  reference: string;
+  status: "new" | "offered" | "accepted" | "declined" | "closed";
+  locale: Locale;
+  service: string;
+  /** Antworten auf die Fragen der Leistung (IDs aus src/config/services.ts) */
+  answers: Record<string, unknown>;
+  contact: { customerType: "private" | "business"; company?: string; name: string; email: string; phone: string };
+  notes?: string;
+  consentAt: string;
+  createdAt: string;
+}
+
 export interface TimeInterval {
   start: Date;
   end: Date;
