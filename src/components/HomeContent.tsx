@@ -25,7 +25,13 @@ import {
   IconSchool,
 } from "@/components/icons";
 
-import { imageUrl } from "@/lib/asset";
+import { bookingHref, services } from "@/config/services";
+import { hamrahCopy } from "@/lib/i18n/hamrah";
+import { HeroStage } from "@/components/hamrah/HeroStage";
+import { HowItWorks } from "@/components/hamrah/HowItWorks";
+import { BookingCta, TrustSection } from "@/components/hamrah/Sections";
+import { ServiceIcon } from "@/components/hamrah/ServiceIcon";
+import { WorldsShowcase } from "@/components/hamrah/WorldsShowcase";
 
 const serviceIcons: Record<string, ReactNode> = {
   family: <IconFamily size={22} />,
@@ -49,8 +55,8 @@ const tileIcons: Record<string, ReactNode> = {
 
 function Section({ title, children, id }: { title: string; children: ReactNode; id?: string }) {
   return (
-    <section id={id} className="scroll-mt-6 pt-12 first:pt-10">
-      <h2 className="border-s-4 border-brand-600 ps-3 text-[1.45rem] font-bold leading-tight text-ink sm:text-[1.6rem]">{title}</h2>
+    <section id={id} className="scroll-mt-24 border-t border-ink/10 pt-10 first:border-t-0 first:pt-2 [&+section]:mt-14">
+      <h2 className="text-[24px] font-bold tracking-[-0.02em] text-ink sm:text-[28px]">{title}</h2>
       <div className="mt-5">{children}</div>
     </section>
   );
@@ -71,7 +77,9 @@ function PageShell({ locale, t, active, children }: { locale: Locale; t: Diction
   return (
     <>
       <Header locale={locale} t={t} active={active} />
-      <main>{children}</main>
+      <main id="inhalt" className="pb-24">
+        {children}
+      </main>
       <Footer locale={locale} t={t} />
     </>
   );
@@ -79,165 +87,63 @@ function PageShell({ locale, t, active, children }: { locale: Locale; t: Diction
 
 /* ---------- Startseite ---------- */
 
+/** HEADER → HERO → SERVICE SELECTOR → SERVICE WORLDS → SO FUNKTIONIERT HAMRAH → TRUST → BOOKING CTA → FOOTER */
 export function HomeContent({ locale, t }: { locale: Locale; t: Dictionary }) {
-  const g = t.gov;
-  const hrefs: Record<string, string> = {
-    book: `/${locale}/termin`,
-    services: `/${locale}/leistungen`,
-    info: `/${locale}/informationen`,
-    contact: `/${locale}/kontakt`,
-  };
   return (
-    <PageShell locale={locale} t={t} active="home">
-      {/* Titel mit Bergfoto */}
-      <div className="border-b border-line">
-        <div className="container-page grid grid-cols-1 items-center gap-8 py-8 sm:py-10 lg:grid-cols-[1.1fr_1fr]">
-          <div>
-            <h1 className="text-[1.9rem] font-bold leading-tight tracking-tight text-ink sm:text-[2.5rem]">{g.start.title}</h1>
-            <p className="mt-4 text-[17px] leading-relaxed text-ink-soft">{g.start.lead}</p>
-            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-              <Link href={hrefs.book} className="btn-primary !rounded-lg !px-6 !py-3.5">
-                {g.book} <IconArrow size={18} className="rtl:rotate-180" />
-              </Link>
-              <a href={site.phoneHref} className="btn-ghost !rounded-lg !px-5 !py-3.5">
-                <IconPhone size={18} className="text-brand-600" /> <span dir="ltr">{site.phone}</span>
-              </a>
-            </div>
-          </div>
-          <figure className="relative overflow-hidden rounded-xl">
-            <img
-              src={imageUrl("nuristan-sm.jpg")}
-              srcSet={`${imageUrl("nuristan-sm.jpg")} 1000w, ${imageUrl("nuristan.jpg")} 2000w`}
-              sizes="(min-width: 1024px) 520px, 100vw"
-              alt=""
-              className="h-[200px] w-full object-cover sm:h-[280px]"
-            />
-            <figcaption className="absolute bottom-2 end-2 rounded bg-white/85 px-2 py-0.5 text-[10.5px] text-ink-muted">{t.home.heroCredit}</figcaption>
-          </figure>
-        </div>
-      </div>
-
-      <div className="container-page">
-        {/* Online-Dienste */}
-        <Section title={g.start.tilesTitle}>
-          <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {g.start.tiles.map((tile) => (
-              <li key={tile.key}>
-                <Link
-                  href={hrefs[tile.key]}
-                  className={`group grid h-full grid-cols-[auto_1fr_auto] items-center gap-x-4 rounded-xl border p-4 transition hover:shadow-lift sm:flex sm:flex-col sm:items-start sm:p-5 ${
-                    tile.key === "book" ? "border-brand-600 bg-brand-600 text-white" : "border-line bg-white hover:border-brand-300"
-                  }`}
-                >
-                  <span className={tile.key === "book" ? "text-white" : "text-brand-700"}>{tileIcons[tile.key]}</span>
-                  <span className="min-w-0 sm:mt-3">
-                    <span className="block text-[17px] font-bold sm:text-[18px]">{tile.title}</span>
-                    <span className={`mt-0.5 block text-[14px] leading-relaxed ${tile.key === "book" ? "text-white/85" : "text-ink-muted"}`}>{tile.text}</span>
-                  </span>
-                  <span className={`inline-flex items-center gap-1.5 text-[14px] font-semibold sm:mt-auto sm:pt-4 ${tile.key === "book" ? "text-white" : "text-brand-700"}`}>
-                    <IconArrow size={16} className="transition group-hover:translate-x-0.5 rtl:rotate-180" />
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </Section>
-
-        {/* Häufig gebucht */}
-        <Section title={g.start.frequentTitle}>
-          <ul className="grid grid-cols-1 overflow-hidden rounded-xl border border-line sm:grid-cols-2">
-            {t.home.services.map((s, i) => (
-              <li key={s.title} className={`border-line ${i > 0 ? "border-t" : ""} ${i === 1 ? "sm:border-t-0" : ""} ${i % 2 === 1 ? "sm:border-s" : ""}`}>
-                <Link href={`/${locale}/termin?leistung=onsite&anlass=${s.key}`} className="flex items-center gap-3 px-4 py-3.5 hover:bg-brand-50/60">
-                  <span className="text-brand-700">{serviceIcons[s.icon]}</span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-[15px] font-semibold text-ink">{s.title}</span>
-                    <span className="block truncate text-[13px] text-ink-muted">{s.text}</span>
-                  </span>
-                  <IconArrow size={16} className="shrink-0 text-brand-600 rtl:rotate-180" />
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </Section>
-
-        {/* Hinweis für Einrichtungen */}
-        <section className="pt-12">
-          <Notice title={g.start.noticeTitle}>
-            <p>{t.home.orgText}</p>
-            <Link href={`/${locale}/termin?wer=einrichtung`} className="mt-3 inline-flex items-center gap-1.5 font-semibold text-brand-700 hover:underline">
-              {t.home.orgCta} <IconArrow size={16} className="rtl:rotate-180" />
-            </Link>
-          </Notice>
-        </section>
-      </div>
-    </PageShell>
+    <>
+      <Header locale={locale} t={t} active="home" />
+      <main id="inhalt">
+        <HeroStage locale={locale} />
+        <WorldsShowcase locale={locale} />
+        <HowItWorks locale={locale} />
+        <TrustSection locale={locale} />
+        <BookingCta locale={locale} />
+      </main>
+      <Footer locale={locale} t={t} />
+    </>
   );
 }
 
-/* ---------- Leistungen ---------- */
+/* ---------- Leistungen (Übersicht der Service Worlds) ---------- */
 
 export function ServicesContent({ locale, t }: { locale: Locale; t: Dictionary }) {
-  const g = t.gov;
-  const p = g.servicesPage;
+  const h = hamrahCopy[locale];
   return (
     <PageShell locale={locale} t={t} active="services">
-      <PageHeader locale={locale} t={t} title={g.services} lead={p.lead} crumbs={[{ label: g.services }]} />
-      <div className="container-page">
-        <Section title={p.factsTitle}>
-          <dl className="overflow-hidden rounded-xl border border-line">
-            {p.facts.map((f, i) => (
-              <div key={f.label} className={`grid grid-cols-1 gap-1 px-4 py-3.5 sm:grid-cols-[200px_1fr] sm:gap-6 ${i ? "border-t border-line" : ""} ${i % 2 ? "bg-[#F9FBFA]" : "bg-white"}`}>
-                <dt className="text-[14px] font-bold text-ink">{f.label}</dt>
-                <dd className="text-[15px] text-ink-soft">{f.value}</dd>
-              </div>
-            ))}
-          </dl>
-        </Section>
-
-        <Section title={t.home.waysTitle}>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            {[
-              { icon: <IconPin size={22} />, w: t.home.onsite, href: `/${locale}/termin?leistung=onsite` },
-              { icon: <IconPhone size={22} />, w: t.home.phone, href: `/${locale}/termin?leistung=phone` },
-            ].map(({ icon, w, href }) => (
-              <div key={w.title} className="flex flex-col rounded-xl border border-line p-5">
-                <div className="flex items-center gap-3">
-                  <span className="grid h-10 w-10 place-items-center rounded-lg bg-brand-600 text-white">{icon}</span>
-                  <h3 className="text-[18px] font-bold text-ink">{w.title}</h3>
+      <PageHeader locale={locale} t={t} title={h.selector.title} lead={h.hero.lead} crumbs={[{ label: h.nav.services }]} />
+      <div className="container-hamrah">
+        <ul className="border-t border-ink/10">
+          {services.map((s, i) => (
+            <li key={s.slug} className="grid gap-6 border-b border-ink/10 py-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)_auto] lg:items-center lg:gap-12">
+              <div className="flex items-start gap-5">
+                <span className="pt-1 text-[13px] font-bold tabular-nums text-ink-faint">{String(i + 1).padStart(2, "0")}</span>
+                <div>
+                  <span className="grid h-12 w-12 place-items-center rounded-2xl text-white" style={{ backgroundColor: s.color }}>
+                    <ServiceIcon slug={s.slug} size={24} />
+                  </span>
+                  <h2 className="t-h2 mt-5 text-ink">{s.name[locale]}</h2>
+                  <p className="mt-2 text-[16px] text-ink-soft">{s.short[locale]}</p>
                 </div>
-                <p className="mt-3 text-[15px] text-ink-soft">{w.text}</p>
-                <p className="mt-2 text-[14px] text-ink-muted">{w.area}</p>
-                <Link href={href} className="mt-4 inline-flex items-center gap-1.5 self-start font-semibold text-brand-700 hover:underline">
-                  {w.cta} <IconArrow size={16} className="rtl:rotate-180" />
+              </div>
+              <ol className="flex flex-wrap items-center gap-x-2 gap-y-2 text-[14px] font-semibold text-ink-soft" aria-label={h.world.journey}>
+                {s.journey.map((j, k) => (
+                  <li key={j.title.de} className="flex items-center gap-2">
+                    {k > 0 && <span aria-hidden className="h-0.5 w-5 rounded-full" style={{ backgroundColor: s.color }} />}
+                    <span className="rounded-full bg-stone px-3 py-1.5">{j.title[locale]}</span>
+                  </li>
+                ))}
+              </ol>
+              <div className="flex flex-col gap-2 sm:flex-row lg:flex-col">
+                <Link href={`/${locale}/leistungen/${s.slug}`} className="h-btn h-btn-secondary">
+                  {h.selector.open} <IconArrow size={18} className="h-arrow" />
+                </Link>
+                <Link href={bookingHref(locale, s)} className="h-btn h-btn-primary">
+                  {s.booking.mode === "wizard" ? h.world.bookWizard : h.world.bookRequest}
                 </Link>
               </div>
-            ))}
-          </div>
-        </Section>
-
-        <Section title={p.listTitle}>
-          <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {t.home.services.map((s) => (
-              <li key={s.title} className="flex gap-4 rounded-xl border border-line p-4">
-                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-brand-50 text-brand-700">{serviceIcons[s.icon]}</span>
-                <div className="min-w-0">
-                  <h3 className="text-[16px] font-bold text-ink">{s.title}</h3>
-                  <p className="mt-1 text-[14px] text-ink-muted">{s.text}</p>
-                  <Link href={`/${locale}/termin?leistung=onsite&anlass=${s.key}`} className="mt-2 inline-flex items-center gap-1 text-[14px] font-semibold text-brand-700 hover:underline">
-                    {p.bookThis} <IconArrow size={14} className="rtl:rotate-180" />
-                  </Link>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </Section>
-
-        <section className="pt-12">
-          <Notice title={g.start.noticeTitle}>
-            <p>{t.home.orgText}</p>
-          </Notice>
-        </section>
+            </li>
+          ))}
+        </ul>
       </div>
     </PageShell>
   );
@@ -251,7 +157,7 @@ export function InfoContent({ locale, t }: { locale: Locale; t: Dictionary }) {
   return (
     <PageShell locale={locale} t={t} active="info">
       <PageHeader locale={locale} t={t} title={g.info} lead={p.lead} crumbs={[{ label: g.info }]} />
-      <div className="container-page">
+      <div className="container-hamrah">
         <Section title={p.stepsTitle}>
           <ol className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
             {p.steps.map((s, i) => (
@@ -315,7 +221,7 @@ export function ContactContent({ locale, t }: { locale: Locale; t: Dictionary })
   return (
     <PageShell locale={locale} t={t} active="contact">
       <PageHeader locale={locale} t={t} title={g.contact} lead={p.lead} crumbs={[{ label: g.contact }]} />
-      <div className="container-page">
+      <div className="container-hamrah">
         <Section title={g.contact}>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <div className={card}>
