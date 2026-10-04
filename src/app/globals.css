@@ -160,8 +160,12 @@
     @apply inline-flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-2xl border border-ink/15 bg-white px-4 py-2.5 text-center text-[15px] font-semibold text-ink transition-colors hover:border-ink/35;
   }
   .h-choice[aria-checked="true"],
-  .h-choice[aria-pressed="true"] {
+  .h-choice[aria-pressed="true"],
+  .h-choice:has(input:checked) {
     @apply border-transparent bg-night text-white;
+  }
+  .h-choice:has(input:focus-visible) {
+    @apply ring-[3px] ring-brand-600/60 ring-offset-2;
   }
 }
 
