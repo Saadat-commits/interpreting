@@ -96,7 +96,13 @@ Keine dieser Integrationen wurde simuliert. Der Code in diesem Repository ist di
 | `src/lib/server/store/*`, `src/lib/server/mail.ts`, `src/lib/types.ts` | ergänzt (neue Methode/Tabelle, nichts entfernt) |
 | `scripts/visual-review.mjs` | neu – Screenshots in 6 Breiten + Konsole + Überlauf |
 
-Unverändert: Buchungsassistent, Verfügbarkeit, Kalender, Rechnungen, PDF, Double-Opt-in, Middleware, Assistent, Chat.
+Unverändert: Verfügbarkeit, Kalender, Rechnungen, PDF, Double-Opt-in, Middleware, Assistent, Chat. Buchungsassistent:
+nur die Richtung des Zurück-Pfeils auf Persisch korrigiert, die Logik ist unverändert.
+
+**Stand der Prüfung:** `npm run lint`, `npm test` (inkl. `service-request.test.ts`) und `npm run build` laufen fehlerfrei.
+`node scripts/visual-review.mjs` prüft 16 Seiten in 6 Breiten (de + fa): keine Konsolenfehler, kein horizontales Überlaufen,
+auch mit Reduced Motion. Die Anfrage-Engine wurde im Browser vollständig durchlaufen (Desktop, Mobile, RTL): Validierung,
+Absenden, Speichern und beide E-Mails.
 
 ## J. Reihenfolge der Umsetzung
 
