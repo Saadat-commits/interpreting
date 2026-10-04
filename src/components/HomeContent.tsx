@@ -6,25 +6,7 @@ import { Header, PageHeader } from "@/components/Header";
 import { HelpLink } from "@/components/HelpChat";
 import type { Dictionary } from "@/lib/i18n";
 import type { Locale } from "@/lib/types";
-import {
-  IconArrow,
-  IconBriefcase,
-  IconBuilding,
-  IconCalendar,
-  IconCheck,
-  IconCounsel,
-  IconDoc,
-  IconFamily,
-  IconHelp,
-  IconHome,
-  IconMail,
-  IconMedical,
-  IconPhone,
-  IconPin,
-  IconScale,
-  IconSchool,
-} from "@/components/icons";
-
+import { IconArrow, IconCheck, IconDoc, IconHelp, IconMail, IconPhone } from "@/components/icons";
 import { bookingHref, services } from "@/config/services";
 import { hamrahCopy } from "@/lib/i18n/hamrah";
 import { HeroStage } from "@/components/hamrah/HeroStage";
@@ -32,24 +14,6 @@ import { HowItWorks } from "@/components/hamrah/HowItWorks";
 import { BookingCta, TrustSection } from "@/components/hamrah/Sections";
 import { ServiceIcon } from "@/components/hamrah/ServiceIcon";
 import { WorldsShowcase } from "@/components/hamrah/WorldsShowcase";
-
-const serviceIcons: Record<string, ReactNode> = {
-  family: <IconFamily size={22} />,
-  work: <IconBriefcase size={22} />,
-  medical: <IconMedical size={22} />,
-  school: <IconSchool size={22} />,
-  building: <IconBuilding size={22} />,
-  scale: <IconScale size={22} />,
-  counsel: <IconCounsel size={22} />,
-  home: <IconHome size={22} />,
-};
-
-const tileIcons: Record<string, ReactNode> = {
-  book: <IconCalendar size={26} />,
-  services: <IconBriefcase size={26} />,
-  info: <IconDoc size={26} />,
-  contact: <IconPhone size={26} />,
-};
 
 /* ---------- Bausteine ---------- */
 
@@ -62,22 +26,11 @@ function Section({ title, children, id }: { title: string; children: ReactNode; 
   );
 }
 
-function Notice({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <div className="rounded-xl border border-brand-200 bg-brand-50/50 p-5 sm:p-6">
-      <div className="flex items-center gap-2 text-[16px] font-bold text-brand-800">
-        <IconHelp size={20} /> {title}
-      </div>
-      <div className="mt-2 text-[15px] leading-relaxed text-ink-soft">{children}</div>
-    </div>
-  );
-}
-
 function PageShell({ locale, t, active, children }: { locale: Locale; t: Dictionary; active: Parameters<typeof Header>[0]["active"]; children: ReactNode }) {
   return (
     <>
       <Header locale={locale} t={t} active={active} />
-      <main id="inhalt" className="pb-24">
+      <main id="inhalt" className="bg-stone pb-24">
         {children}
       </main>
       <Footer locale={locale} t={t} />
@@ -161,7 +114,7 @@ export function InfoContent({ locale, t }: { locale: Locale; t: Dictionary }) {
         <Section title={p.stepsTitle}>
           <ol className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
             {p.steps.map((s, i) => (
-              <li key={s.title} className="rounded-xl border border-line p-5">
+              <li key={s.title} className="rounded-2xl border border-ink/10 bg-white p-6">
                 <span className="grid h-9 w-9 place-items-center rounded-full bg-brand-600 text-[15px] font-bold text-white">{i + 1}</span>
                 <h3 className="mt-3 text-[16px] font-bold text-ink">{s.title}</h3>
                 <p className="mt-1.5 text-[14px] leading-relaxed text-ink-muted">{s.text}</p>
@@ -181,22 +134,22 @@ export function InfoContent({ locale, t }: { locale: Locale; t: Dictionary }) {
         </Section>
 
         <Section title={p.agbTitle} id="agb">
-          <div className="flex flex-col items-start gap-4 rounded-xl border border-line p-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col items-start gap-4 rounded-2xl border border-ink/10 bg-white p-6 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-start gap-3">
               <IconDoc size={28} className="shrink-0 text-brand-700" />
               <p className="text-[15px] text-ink-soft">{p.agbText}</p>
             </div>
-            <a href={site.agbUrl} target="_blank" rel="noopener" className="btn-primary shrink-0 !rounded-lg !px-5 !py-3">
+            <a href={site.agbUrl} target="_blank" rel="noopener" className="h-btn h-btn-primary shrink-0">
               {p.agbCta}
             </a>
           </div>
         </Section>
 
         <Section title={p.faqTitle}>
-          <div className="divide-y divide-line overflow-hidden rounded-xl border border-line">
+          <div className="divide-y divide-ink/10 overflow-hidden rounded-2xl border border-ink/10 bg-white">
             {p.faq.map((f) => (
               <details key={f.q} className="group">
-                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-4 py-4 text-[15px] font-semibold text-ink hover:bg-brand-50/50">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-4 py-4 text-[15px] font-semibold text-ink hover:bg-stone">
                   {f.q}
                   <span className="text-brand-700 transition group-open:rotate-45" aria-hidden="true">
                     +
@@ -217,7 +170,7 @@ export function InfoContent({ locale, t }: { locale: Locale; t: Dictionary }) {
 export function ContactContent({ locale, t }: { locale: Locale; t: Dictionary }) {
   const g = t.gov;
   const p = g.contactPage;
-  const card = "rounded-xl border border-line p-5";
+  const card = "rounded-2xl border border-ink/10 bg-white p-6";
   return (
     <PageShell locale={locale} t={t} active="contact">
       <PageHeader locale={locale} t={t} title={g.contact} lead={p.lead} crumbs={[{ label: g.contact }]} />
@@ -247,15 +200,15 @@ export function ContactContent({ locale, t }: { locale: Locale; t: Dictionary })
                 <IconHelp size={20} className="text-brand-600" /> {p.helpTitle}
               </div>
               <p className="mt-2 text-[14px] text-ink-muted">{p.helpText}</p>
-              <HelpLink className="btn-primary mt-3 !rounded-lg !px-4 !py-2.5 !text-[14px]">{p.helpCta}</HelpLink>
+              <HelpLink className="h-btn h-btn-primary mt-4 h-11 px-5 text-[14px]">{p.helpCta}</HelpLink>
             </div>
           </div>
         </Section>
 
         <Section title={p.areaTitle}>
-          <dl className="overflow-hidden rounded-xl border border-line">
+          <dl className="overflow-hidden rounded-2xl border border-ink/10 bg-white">
             {g.servicesPage.facts.slice(1, 3).map((f, i) => (
-              <div key={f.label} className={`grid grid-cols-1 gap-1 px-4 py-3.5 sm:grid-cols-[200px_1fr] sm:gap-6 ${i ? "border-t border-line" : ""}`}>
+              <div key={f.label} className={`grid grid-cols-1 gap-1 px-4 py-3.5 sm:grid-cols-[200px_1fr] sm:gap-6 ${i ? "border-t border-ink/10" : ""}`}>
                 <dt className="text-[14px] font-bold text-ink">{f.label}</dt>
                 <dd className="text-[15px] text-ink-soft">{f.value}</dd>
               </div>

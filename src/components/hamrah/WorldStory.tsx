@@ -74,7 +74,7 @@ export function WorldStory({ locale, slug }: { locale: Locale; slug: ServiceSlug
         <div
           ref={sceneRef}
           aria-hidden="true"
-          className="sticky top-[68px] z-10 col-start-1 row-span-2 row-start-1 h-[40svh] min-h-[240px] self-start bg-stone lg:col-start-2 lg:h-[calc(100svh-68px)] lg:bg-transparent"
+          className="sticky top-[68px] z-20 col-start-1 row-span-2 row-start-1 h-[40svh] min-h-[240px] self-start bg-stone lg:col-start-2 lg:h-[calc(100svh-68px)] lg:bg-transparent"
         >
           <div className="scene-fade absolute inset-y-0 -end-5 -start-5 sm:-end-8 sm:-start-8 lg:-start-12 lg:-end-[max(2rem,calc((100vw-1240px)/2+2rem))]">
             <ScenePoster color={s.color} className={`absolute inset-0 m-auto h-full w-full transition-opacity duration-700 ${loaded ? "opacity-0" : "opacity-100"}`} />
@@ -93,7 +93,7 @@ export function WorldStory({ locale, slug }: { locale: Locale; slug: ServiceSlug
         {/* HERO */}
         <div className="col-start-1 row-start-1 mt-[max(40svh,240px)] flex flex-col justify-center pb-10 pt-8 lg:mt-0 lg:min-h-[calc(100svh-68px)] lg:py-20">
           <Link href={`/${locale}/leistungen`} className="inline-flex items-center gap-1.5 self-start text-[14px] font-semibold text-ink-muted hover:text-ink">
-            <IconArrow size={16} className="rotate-180 rtl:rotate-0" /> {h.world.back}
+            <IconArrow size={16} className="rotate-180" /> {h.world.back}
           </Link>
           <p className="mt-8 flex items-center gap-3">
             <span className="grid h-10 w-10 place-items-center rounded-xl text-white" style={{ backgroundColor: s.color }}>

@@ -451,7 +451,7 @@ export function BookingWizard({
       <div className="mt-8 flex items-center justify-between gap-3 border-t border-line pt-6">
         {stepIndex > 0 ? (
           <button type="button" onClick={() => go(-1)} className="btn-ghost !rounded-lg !px-5 !py-3">
-            <IconArrow size={17} className="rotate-180 rtl:rotate-0" /> {g.back}
+            <IconArrow size={17} className="rotate-180" /> {g.back}
           </button>
         ) : (
           <span />

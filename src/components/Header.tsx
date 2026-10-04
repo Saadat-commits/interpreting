@@ -182,7 +182,7 @@ export function Header({ locale, t, active }: { locale: Locale; t: Dictionary; a
 /** Seitenkopf für Unterseiten: Brotkrumen, Überschrift, kurze Einleitung */
 export function PageHeader({ locale, t, title, lead, crumbs = [] }: { locale: Locale; t: Dictionary; title: string; lead?: string; crumbs?: { href?: string; label: string }[] }) {
   return (
-    <div className="bg-white">
+    <div className="bg-stone">
       <div className="container-hamrah pb-8 pt-8 sm:pb-12 sm:pt-12">
         <nav aria-label={t.gov.breadcrumb} className="text-[13px] text-ink-muted">
           <ol className="flex flex-wrap items-center gap-1.5">

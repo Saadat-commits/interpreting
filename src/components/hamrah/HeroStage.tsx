@@ -110,7 +110,7 @@ export function HeroStage({ locale }: { locale: Locale }) {
           <p className="t-lead mt-6 max-w-[54ch] text-ink-soft">{h.hero.lead}</p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <a href="#auswahl" className="h-btn h-btn-primary">
-              {h.hero.cta} <IconArrow size={18} className="rotate-90" />
+              {h.hero.cta} <IconArrow size={18} className="rotate-90 rtl:-rotate-90" />
             </a>
             <a href={site.phoneHref} className="h-btn h-btn-secondary">
               <IconPhone size={18} /> <span dir="ltr">{site.phone}</span>
