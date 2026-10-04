@@ -95,14 +95,16 @@ export function HeroStage({ locale }: { locale: Locale }) {
           <p className="t-eyebrow flex flex-wrap items-center gap-x-2 gap-y-1 text-ink-muted">
             <span className="h-2 w-2 rounded-full bg-saffron" aria-hidden />
             <span>{h.hero.eyebrow}</span>
-            {h.hero.langs.map((l) => (
-              <span key={l} className="flex items-center gap-2 normal-case tracking-normal">
-                <span aria-hidden className="text-ink-faint">
-                  ·
+            <span className="flex items-center gap-2 normal-case tracking-normal">
+              {h.hero.langs.map((l) => (
+                <span key={l} className="flex items-center gap-2">
+                  <span aria-hidden className="text-ink-faint">
+                    ·
+                  </span>
+                  <bdi>{l}</bdi>
                 </span>
-                <bdi>{l}</bdi>
-              </span>
-            ))}
+              ))}
+            </span>
           </p>
           <h1 id="hero-title" className="t-display mt-5 max-w-[14ch] text-ink">
             {h.hero.title}

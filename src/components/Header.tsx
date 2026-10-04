@@ -107,14 +107,14 @@ export function Header({ locale, t, active }: { locale: Locale; t: Dictionary; a
             </ul>
           </nav>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2">
             <div className="hidden text-[14px] text-ink-soft md:block">
               <LanguageSwitcher locale={locale} label={t.nav.switchLabel} compact />
             </div>
             <a href={site.phoneHref} className="hidden h-11 items-center gap-2 rounded-full px-3 text-[14px] font-semibold text-ink-soft hover:text-ink xl:inline-flex">
               <IconPhone size={16} /> <span dir="ltr">{site.phone}</span>
             </a>
-            <a href={site.phoneHref} aria-label={h.nav.call} className="grid h-11 w-11 place-items-center rounded-full text-ink-soft hover:bg-stone xl:hidden">
+            <a href={site.phoneHref} aria-label={h.nav.call} className="grid h-11 w-11 place-items-center rounded-full text-ink-soft hover:bg-stone max-[399px]:hidden xl:hidden">
               <IconPhone size={19} />
             </a>
             <Link href={`/${locale}/anfrage`} aria-current={active === "book" ? "page" : undefined} className="h-btn h-btn-primary !h-11 !px-5 !text-[14px]">
