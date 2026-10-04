@@ -21,11 +21,24 @@ const config: Config = {
         ink: {
           DEFAULT: "#13201A",
           soft: "#3B4A43",
-          muted: "#6B7A73",
+          muted: "#5F6E67",
           faint: "#A3AFA9",
         },
         line: "#E4EAE6",
         paper: "#FFFFFF",
+        // HAMRAH-Tokens – siehe docs/HAMRAH-DESIGN-BIBLE.md
+        night: { DEFAULT: "#0D1411", soft: "#17211C", line: "#26332C" },
+        stone: { DEFAULT: "#F3F1EB", deep: "#E8E4DA" },
+        mint: "#6EE7A0",
+        saffron: "#E9A23B",
+        world: {
+          cleaning: "#3A9FB5",
+          moving: "#C27C3E",
+          assembly: "#5872A0",
+          transport: "#D9653B",
+          interpreting: "#1F7049",
+          security: "#3F4C86",
+        },
         // Ausschließlich für „nicht verfügbar“ im Kalender
         busy: { DEFAULT: "#B94A43", bg: "#FBEFEE", line: "#F0D3D1" },
       },

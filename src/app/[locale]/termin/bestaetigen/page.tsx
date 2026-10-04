@@ -19,7 +19,7 @@ export default async function VerifyPage({ params, searchParams }: { params: Pro
     <>
       <Header locale={locale} t={t} active="book" />
       <PageHeader locale={locale} t={t} title={t.gov.book} crumbs={[{ href: `/${locale}/termin`, label: t.gov.book }, { label: "✓" }]} />
-      <main className="container-page max-w-3xl py-10">
+      <main id="inhalt" className="container-page max-w-3xl py-10">
         <VerifyBooking t={t} locale={locale} token={token} />
       </main>
       <Footer locale={locale} t={t} />

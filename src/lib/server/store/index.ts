@@ -1,4 +1,4 @@
-import type { Booking, ChatMessage, Invoice } from "@/lib/types";
+import type { Booking, ChatMessage, Invoice, ServiceRequest } from "@/lib/types";
 import { JsonFileStore } from "./json-file-store";
 import { PostgresStore } from "./postgres-store";
 
@@ -20,6 +20,8 @@ export interface Store {
   createInvoice(build: (seq: number) => Invoice): Promise<Invoice>;
   getInvoice(id: string): Promise<Invoice | null>;
   addChatMessage(msg: ChatMessage): Promise<void>;
+  /** Legt eine Leistungsanfrage mit fortlaufender Nummer an */
+  createServiceRequest(build: (seq: number) => ServiceRequest): Promise<ServiceRequest>;
 }
 
 let instance: Store | null = null;

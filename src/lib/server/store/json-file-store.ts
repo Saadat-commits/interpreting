@@ -1,14 +1,16 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
-import type { Booking, ChatMessage, Invoice } from "@/lib/types";
+import type { Booking, ChatMessage, Invoice, ServiceRequest } from "@/lib/types";
 import type { Store } from "./index";
 
 interface DbShape {
   version: 1;
-  counters: { booking: Record<string, number>; invoice: Record<string, number> };
+  counters: { booking: Record<string, number>; invoice: Record<string, number>; request?: Record<string, number> };
   bookings: Booking[];
   invoices: Invoice[];
   chat: ChatMessage[];
+  /** Erst mit den Leistungsanfragen hinzugekommen – fehlt in älteren db.json */
+  requests?: ServiceRequest[];
 }
 
 const empty = (): DbShape => ({ version: 1, counters: { booking: {}, invoice: {} }, bookings: [], invoices: [], chat: [] });
@@ -106,6 +108,18 @@ export class JsonFileStore implements Store {
   addChatMessage(msg: ChatMessage) {
     return this.tx((db) => {
       db.chat.push(msg);
+    });
+  }
+
+  createServiceRequest(build: (seq: number) => ServiceRequest) {
+    return this.tx((db) => {
+      const year = String(new Date().getFullYear());
+      db.counters.request ??= {};
+      const seq = (db.counters.request[year] ?? 0) + 1;
+      db.counters.request[year] = seq;
+      const request = build(seq);
+      (db.requests ??= []).push(request);
+      return request;
     });
   }
 }

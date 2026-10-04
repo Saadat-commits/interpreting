@@ -9,7 +9,7 @@ export function LegalPage({ locale, t, title, children }: { locale: Locale; t: D
     <>
       <Header locale={locale} t={t} />
       <PageHeader locale={locale} t={t} title={title} crumbs={[{ label: title }]} />
-      <main className="container-page max-w-3xl py-10">
+      <main id="inhalt" className="container-page max-w-3xl py-10">
         {locale === "fa" && (
           <p className="mt-4 rounded-2xl bg-paper px-4 py-3 text-sm text-ink-muted">این متن حقوقی به زبان آلمانی معتبر است.</p>
         )}

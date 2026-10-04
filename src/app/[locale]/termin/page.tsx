@@ -31,8 +31,8 @@ export default async function BookingPage({
     <>
       <Header locale={locale} t={t} active="book" />
       <PageHeader locale={locale} t={t} title={t.gov.book} lead={t.booking.subtitle} crumbs={[{ label: t.gov.book }]} />
-      <main className="pb-10">
-        <div className="container-page">
+      <main id="inhalt" className="bg-stone pb-16">
+        <div className="container-hamrah">
           <BookingWizard locale={locale} t={t} initialService={initial} initialCategory={category} initialWho={wer === "einrichtung" ? "organisation" : wer === "privat" ? "private" : undefined} />
         </div>
       </main>

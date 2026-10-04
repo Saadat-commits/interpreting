@@ -118,6 +118,10 @@ export function installMockApi() {
       await wait(500);
       return json({ ok: true });
     }
+    if (path === "/api/requests") {
+      await wait(700);
+      return json({ ok: true, reference: `A-${new Date().getFullYear()}-0001` });
+    }
     return json({ error: "not_found" }, 404);
   };
 }

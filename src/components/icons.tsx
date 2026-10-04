@@ -205,3 +205,33 @@ export const IconDoc = (p: P) => (
     <path d="M14 3.5V8h4M9 12h6M9 15.5h6" />
   </Base>
 );
+export const IconSparkle = (p: P) => (
+  <Base {...p}>
+    <path d="M12 3.5 13.6 9l5.4 1.6-5.4 1.6L12 17.7l-1.6-5.5L5 10.6 10.4 9 12 3.5ZM18.5 15.5l.7 2.1 2.1.7-2.1.7-.7 2.1-.7-2.1-2.1-.7 2.1-.7.7-2.1Z" />
+  </Base>
+);
+export const IconBox = (p: P) => (
+  <Base {...p}>
+    <path d="M3.5 7.5 12 3.5l8.5 4v9L12 20.5l-8.5-4v-9Z" />
+    <path d="m3.5 7.5 8.5 4 8.5-4M12 11.5v9M7.8 5.5l8.4 4" />
+  </Base>
+);
+export const IconTool = (p: P) => (
+  <Base {...p}>
+    <path d="M14.5 5.5a4 4 0 0 0 4.9 4.9l-9 9a2.1 2.1 0 0 1-3-3l9-9a4 4 0 0 1-1.9-1.9Z" />
+    <path d="m15 4 2.5 2.5L20 4" />
+  </Base>
+);
+export const IconTruck = (p: P) => (
+  <Base {...p}>
+    <path d="M2.5 6.5h11v10h-11zM13.5 9.5h4l3 3.5v3.5h-7" />
+    <circle cx="6.5" cy="17.5" r="1.8" />
+    <circle cx="17" cy="17.5" r="1.8" />
+  </Base>
+);
+export const IconSpeech = (p: P) => (
+  <Base {...p}>
+    <path d="M3.5 5.5h10v7h-5l-3 2.5v-2.5h-2v-7Z" />
+    <path d="M13.5 9h7v7h-2v2.5l-3-2.5h-4v-3.5" />
+  </Base>
+);
